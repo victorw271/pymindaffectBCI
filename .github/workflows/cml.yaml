@@ -14,7 +14,7 @@ jobs:
       - name: Train model
         run: |
           # Your ML workflow goes here
-          FH_Analyse_savefile.py
+          python FH_Analyse_savefile.py
           
           cat metrics.txt >> report.md
           cml-publish plot.png --md >> report.md
