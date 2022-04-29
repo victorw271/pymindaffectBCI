@@ -14,7 +14,6 @@ jobs:
       - name: Train model
         run: |
           # Your ML workflow goes here
-          pip install -r requirements.txt
           FH_Analyse_savefile.py
           
           cat metrics.txt >> report.md
