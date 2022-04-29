@@ -15,8 +15,7 @@ jobs:
         run: |
           # Your ML workflow goes here
           pip install -r requirements.txt
-          mindaffectBCI/decoder/analyse_datasets.py
-          depth = 5
+          FH_Analyse_savefile.py
           
           cat metrics.txt >> report.md
           cml-publish plot.png --md >> report.md
