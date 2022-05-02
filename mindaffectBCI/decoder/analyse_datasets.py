@@ -16,6 +16,7 @@
 # along with pymindaffectBCI.  If not, see <http://www.gnu.org/licenses/>
 
 import numpy as np
+import sklearn
 from mindaffectBCI.decoder.datasets import get_dataset
 from mindaffectBCI.decoder.model_fitting import BaseSequence2Sequence, MultiCCA, FwdLinearRegression, BwdLinearRegression, LinearSklearn
 try:
@@ -34,9 +35,7 @@ import matplotlib.pyplot as plt
 import gc
 import re
 
-
-
-def analyse_dataset(X:np.ndarray, Y:np.ndarray, coords, model:str='cca', test_idx=None, cv=True, tau_ms:float=300, fs:float=None,  rank:int=1, evtlabs=None, offset_ms=0, center=True, tuned_parameters=None, ranks=None, retrain_on_all=True, **kwargs):
+def analyse_dataset(X:np.ndarray, Y:np.ndarray, coords, outfile, model:str='cca', test_idx=None, cv=True, tau_ms:float=300, fs:float=None,  rank:int=1, evtlabs=None, offset_ms=0, center=True, tuned_parameters=None, ranks=None, retrain_on_all=True, **kwargs):
     """ cross-validated training on a single datasets and decoing curve estimation
 
     Args:
@@ -65,14 +64,24 @@ def analyse_dataset(X:np.ndarray, Y:np.ndarray, coords, model:str='cca', test_id
     if coords is not None:
         fs = coords[1]['fs'] 
         print("X({})={}, Y={} @{}hz".format([c['name'] for c in coords], X.shape, Y.shape, fs))
+        # Write metrics to file
+        with open('metrics.txt', 'a') as outfile:
+            outfile.write("X({})={}, Y={} @{}hz \n".format([c['name'] for c in coords], X.shape, Y.shape, fs))
     else:
         print("X={}, Y={} @{}hz".format(X.shape, Y.shape, fs))
+        # Write metrics to file
+        with open('metrics.txt', 'a') as outfile:
+            outfile.write("X={}, Y={} @{}hz \n".format(X.shape, Y.shape, fs))
     tau = int(tau_ms*fs/1000)
     offset=int(offset_ms*fs/1000)
 
     Cscale = np.sqrt(np.mean(X.ravel()**2))
     print('Cscale={}'.format(Cscale))
     C = .1/Cscale
+
+    # Write metrics to file
+    with open('metrics.txt', 'a') as outfile:
+        outfile.write('Cscale={} \n'.format(Cscale))
 
     # create the model if not provided
     if isinstance(model,BaseSequence2Sequence):
@@ -159,6 +168,9 @@ def analyse_dataset(X:np.ndarray, Y:np.ndarray, coords, model:str='cca', test_id
     print(clsfr)
     print("score={}".format(score))
 
+    with open('metrics.txt', 'a') as outfile:
+        outfile.write("score={} \n".format(score))
+
     # compute decoding curve
     (dc) = decodingCurveSupervised(rawFy, marginalizedecis=True, minDecisLen=clsfr.minDecisLen, bwdAccumulate=clsfr.bwdAccumulate, priorsigma=(clsfr.sigma0_,clsfr.priorweight), softmaxscale=clsfr.softmaxscale_, nEpochCorrection=clsfr.startup_correction)
 
@@ -185,11 +197,13 @@ def analyse_datasets(dataset:str, model:str='cca', dataset_args:dict=None, loade
     nout=[]
     for i, fi in enumerate(filenames):
         print("{}) {}".format(i, fi))
+        with open('metrics.txt', 'a') as outfile:
+            outfile.write("\n\n {}) {} \n".format(i, fi))
         try:
             X, Y, coords = loader(fi, **loader_args)
             if preprocess_args is not None:
                 X, Y, coords = preprocess(X, Y, coords, **preprocess_args)
-            score, decoding_curve, _, _, _ = analyse_dataset(X, Y, coords, model, tuned_parameters=tuned_parameters, **clsfr_args, **kwargs)
+            score, decoding_curve, _, _, _ = analyse_dataset(X, Y, coords, outfile, model, tuned_parameters=tuned_parameters, **clsfr_args, **kwargs)
             nout.append(Y.shape[-1] if Y.ndim<=3 else Y.shape[-2])
             scores.append(score)
             decoding_curves.append(decoding_curve)
@@ -208,7 +222,9 @@ def analyse_datasets(dataset:str, model:str='cca', dataset_args:dict=None, loade
     plt.savefig("{}_decoding_curve.png".format(dataset))
     plt.show()
 
-
+    with open('metrics.txt', 'a') as outfile:
+        outfile.write("\n--------\n\n Ave-score={}\n".format(avescore))
+        outfile.write("Ave-DC\n{}\n".format(print_decoding_curve(np.nanmean(int_len,0),np.nanmean(prob_err,0),np.nanmean(prob_err_est,0),np.nanmean(se,0),np.nanmean(st,0))))
 
 def analyse_train_test(X:np.ndarray, Y:np.ndarray, coords, splits=1, label:str='', model:str='cca', tau_ms:float=300, fs:float=None,  rank:int=1, evtlabs=None, preprocess_args=None, clsfr_args:dict=None,  **kwargs):    
     """analyse effect of different train/test splits on performance and generate a summary decoding plot.
