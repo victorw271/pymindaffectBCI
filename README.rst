@@ -38,7 +38,7 @@ Try the off-line analysis on-line on binder.
 
 Try off-line multiple datasets analysis on `kaggle <https://www.kaggle.com/mindaffect/mindaffectbci>`_ 
 
-
+To be able to use Data Version Control, you need to install DVC locally. This can be done using the `link <https://dvc.org/doc/install>`_
 
 Installation Test
 -----------------
