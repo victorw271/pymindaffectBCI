@@ -1,5 +1,5 @@
 #  Copyright (c) 2019 MindAffect B.V. 
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -31,6 +31,7 @@ signal.signal(signal.SIGTERM, lambda signum, frame: shutdown())
 class NoneProc:
     """tempory class simulating a working null sub-process
     """
+    exitcode = 0
     def is_alive(self): return True
     def terminate(self): pass
     def join(self): pass
@@ -203,9 +204,18 @@ def startDecoderProcess(decoder,decoder_args, label='online_bci', logdir=None):
 
 
 def startPresentationProcess(presentation,presentation_args:dict=dict()):
+    """start the presentation process, i.e. the process which presents the user-interface and stimuli to the user
+
+    Args:
+        presentation (_type_): the presentation process to start -- normally a string with a fully-qualified python class name to run
+        presentation_args (dict, optional): arguments to pass to the presentation object at creation. Defaults to dict().
+
+    Returns:
+        _type_: _description_
+    """    
     print("Attempting to start presentation: {}".format(presentation))
     target=None
-    if presentation.lower() == 'selectionMatrix'.lower() or presentation.lower() == 'mindaffectBCI.examples.presentation.selectionMatrix'.lower():
+    if presentation.lower() == 'selectionMatrix'.lower() or presentation.lower() == 'mindaffectBCI.presentation.selectionMatrix'.lower():
         if presentation_args is None:
             presentation_args = dict(symbols= [['Hello', 'Good bye'], 
                                                ['Yes',   'No']])
@@ -240,11 +250,16 @@ def startPresentationProcess(presentation,presentation_args:dict=dict()):
         presentation.start()
         return presentation
     else:
-        return None
+        return NoneProc()
 
 def logConfiguration(args):
+    """log the configuration of the system to the hub/savefile
+
+    Args:
+        args (dict): the arguments used to start the BCI
+    """
     import json
-    from mindaffectBCI.utopiaController import utopiaControler
+    from mindaffectBCI.utopiaController import utopiaController
     try:
         uc = utopicController()
         uc.autoconnect()
@@ -258,11 +273,11 @@ def logConfiguration(args):
         traceback.print_exc()
     return
     
-def run(label='', logdir=None, block=True, hub=None, args:dict=dict(),
+def run(label='', logdir=None, hub=None, args:dict=dict(),
         acquisition:str=None, acq_args:dict=dict(), 
         decoder:str='decoder', decoder_args:dict=dict(), 
         presentation:str='selectionMatrix', presentation_args:dict=dict()):
-    """[summary]
+    """ Run the full on-line analysis stack with hub, acquisition, decoder and presentation
 
     Args:
         label (str, optional): string label for the saved data file. Defaults to ''.
@@ -272,8 +287,7 @@ def run(label='', logdir=None, block=True, hub=None, args:dict=dict(),
         decoder (str, optional): the name of the decoder function to use.  Defaults to 'decoder'.
         decoder_args (dict, optional): dictinoary of options to pass to the mindaffectBCI.decoder.run(). Defaults to None.
         presentation (str, optional): the name of the presentation function to use.  Defaults to: 'selectionMatrix'
-        presentation_args (dict, optional): dictionary of options to pass to mindaffectBCI.examples.presentation.selectionMatrix.run(). Defaults to None.
-        block (bool, optional): return immeadiately or wait for presentation to finish and then terminate all processes.  Default to True
+        presentation_args (dict, optional): dictionary of options to pass to mindaffectBCI.presentation.selectionMatrix.run(). Defaults to None.
 
     Raises:
         ValueError: invalid options, e.g. unrecognised acq_driver
@@ -366,22 +380,37 @@ def run(label='', logdir=None, block=True, hub=None, args:dict=dict(),
     # run the stimulus, in a background processwith our matrix and default parameters for a noise tag
     presentation_process = startPresentationProcess(presentation, presentation_args)
 
-    if block == True:
-        if presentation_process is not None:
-            # wait for presentation to terminate
-            presentation_process.join()
-        else:
-            while True:
-                sleep(1)
-            #hub_process.wait()
-    else:
-        return False
+    # check all the sub-processes are running correctly.... abort on crash
+    def get_subprocess_liveness():
+        #nonlocal hub_process, acquisition_process, decoder_process, presentation_process
+        return hub_process.poll() is None, acquisition_process.is_alive(), decoder_process.is_alive(), presentation_process.is_alive()
+    # run while all sub-processes are alive
+    while all(get_subprocess_liveness()):
+        sleep(1)
 
     # TODO []: pop-up a monitoring object / dashboard!
 
+    # get the exit codes for the sub-processes
+    # check the reason we stopped... if something crashed then raise an error
+    exitcodes = {"hub": hub_process.poll(),
+                 "acq":acquisition_process.exitcode, 
+                 "decoder":decoder_process.exitcode,
+                 "presentation":presentation_process.exitcode}
+
     #--------------------------- SHUTDOWN ------------------------------
-    # shutdown the background processes
+    # shutdown the background processes cleanly
     shutdown(hub_process, acquisition_process, decoder_process)
+
+    # raise error if sub-process crashed
+    # get the exit codes for the sub-processes
+    # check the reason we stopped... if something crashed then raise an error
+    if exitcodes['acq'] is not None and exitcodes['acq'] > 0 :
+        raise ValueError("acquisition process crashed!")
+    if exitcodes['decoder'] is not None and exitcodes['decoder'] > 0 :
+        raise ValueError("Decoder process crashed!")
+    if exitcodes['presentation'] is not None and exitcodes['presentation'] > 0:
+        raise ValueError("Presentation process crashed!")
+
 
 
 def check_is_running(hub=None, acquisition=None, decoder=None):
@@ -407,7 +436,7 @@ def check_is_running(hub=None, acquisition=None, decoder=None):
         decoder = decoder_process
 
     isrunning=True
-    if hub is None or not hub.poll() is None:
+    if hub is None or hub.poll() is not None:
         isrunning=False
         print("Hub is dead!")
     if acquisition is None or not acquisition.is_alive():
@@ -468,8 +497,6 @@ def shutdown(hub=None, acquisition=None, decoder=None):
     hub.communicate()
     print("Hub is dead?")
     print("If not kill with:  taskkill /F /IM java.exe")
-    #print('exit online_bci')
-    exit(0)
 
 
 def parse_args():

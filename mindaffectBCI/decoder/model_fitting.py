@@ -1,5 +1,5 @@
 #  Copyright (c) 2019 MindAffect B.V.
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -80,19 +80,21 @@ def init_clsfr(
 
     Args:
         model (str): the type of classifier to create. One-of; cca,bwd,fwd,ridge,lr,svr,svc,linearsklearn
-        tau (int): [description]
-        offset (int): [description]
-        rank (int): [description]
-        evtlabs (list): [description]
-        center (bool): [description]
-        pipeline (list, optional): [description]. Defaults to None.
-        C (float, optional): [description]. Defaults to 1.0.
+        tau (int, optional): the length in samples of the stimulus response. Defaults to None.
+        offset (int, optional): offset from the event time for the response window. Defaults to None.
+        evtlabs ([ListStr,optional]): the event types to use for model fitting.  See `stim2event.py` for the support event types. Defautls to ('fe','re').
+        tau_ms (int, optional): the lenght in milliseconds of the stimulus response. Defaults to None
+        offset_ms (float, optional): the offset from the event time for the start of the response window.  Defaults to None.
+        fs (float, optional): the sampling rate of the data, used for coverting milliseconds to samples.  Defaults to None.
+        rank (int, optional): The rank (number of components) of the model to fit. Defaults to 1.
+        center (bool, optional): center the data before fitting the model. Defaults to True.
+        C (float, optional): regularization strength for the model.  Note: adjusted w.r.t. the model so higher-value means more regularization. Defaults to 1.0.
 
     Raises:
         NotImplementedError: [description]
 
     Returns:
-        [type]: [description]
+        BaseSequence2Sequence: the fitted sequence 2 sequence model
     """
     if isinstance(model, BaseSequence2Sequence):
         clsfr = model
@@ -152,10 +154,18 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
 
         Args:
           evtlabs ([ListStr,optional]): the event types to use for model fitting.  See `stim2event.py` for the support event types. Defautls to ('fe','re').
-          tau (int, optional): the length in samples of the stimulus response. Defaults to 18.
-          offset (int, optional): offset from the event time for the response window.
+          tau (int, optional): the length in samples of the stimulus response. Defaults to None.
+          offset (int, optional): offset from the event time for the response window. Defaults to None.
+          tau_ms (int, optional): the lenght in milliseconds of the stimulus response. Defaults to None
+          offset_ms (float, optional): the offset from the event time for the start of the response window.  Defaults to None.
+          fs (float, optional): the sampling rate of the data, used for coverting milliseconds to samples.  Defaults to None.
           priorweight (float, Optional): the weighting in pseudo-samples for the prior estimate for the prediction noise variance.  Defaults to 120.
           startup_correction (int, Optional): length in samples of addition startup correction where the noise-variance is artificially increased due to insufficient data.  Defaults to 100.
+          prediction_offsets (list-of-int, optional): set of offsets to test when performing prediction to check/adapt to stimulus to response latency changes.  Defaults to None.
+          centerY (bool, optional): center the stimulus-sequence information to be zero-mean per trial before fitting the response model.  Defaults to False.
+          nvirt_out (int, optional): number of virtual outputs to add when testing.  If <0 then this is a limit on the totoal nubmer of outputs if >0 then add this number additional virtual outputs.  Defaults to -20.
+          nocontrol_condn (float, optional): relative importance of correct prediction of nocontrol when no stimulus is present.  Defaults to .5
+          verb (int, optional): verbosity level, 0 is default, higher number means be more talky in debug messages.  Defaults to 0.
         """
         self.evtlabs = evtlabs
         self.fs, self.tau_ms, self.tau, self.offset_ms, self.offset, self.priorweight, self.startup_correction, self.prediction_offsets = (
@@ -170,9 +180,9 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
         if self.evtlabs is not None:
             if fit or not hasattr(self, 's2estate_') or self.s2estate_ is None:  # fit the event mapping
                 Y_TSye, self.s2estate_, self.evtlabs_ = stim2event(
-                    Y_TSy, self.evtlabs, axis=-2, oM=prevY)  # (tr, samp, Y, e)
+                    Y_TSy, evtypes=self.evtlabs, axis=-2, oM=prevY)  # (tr, samp, Y, e)
             else:  # use fitted event mapping
-                Y_TSye, _, _ = stim2event(Y_TSy, self.s2estate_, axis=-2, oM=prevY)  # (tr, samp, Y, e)
+                Y_TSye, _, _ = stim2event(Y_TSy, evtypes=self.s2estate_, axis=-2, oM=prevY)  # (tr, samp, Y, e)
         else:
             if hasattr(Y_TSy, 'info'):
                 self.evtlabs_ = Y_TSy.info.get('evtlabs', None)
@@ -444,9 +454,9 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
             if Fy is None:  # compute the Fy from X,Y
                 Ytst = self.add_virt_out(Y, nvirt_out if nvirt_out is None else self.nvirt_out)
                 Fy = self.predict(X, Ytst)
-            score = BaseSequence2Sequence.audc_score(Fy)
+            score = BaseSequence2Sequence.score_audc(Fy)
         else:  # no true target info, so try to score w.r.t. the summed activity over all outputs
-            score = self.gof_score(X, Y)
+            score = self.score_corr(X, Y)
         return score
 
     def decoding_curve(self, X_TSd, Y_TSy, cv=None, **kwargs):
@@ -612,7 +622,7 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
         disp.plot(ax=plt.gca())
 
     @staticmethod
-    def audc_score(Fy_TSy, score_noise=1e-5):
+    def score_audc(Fy_TSy, score_noise=1e-5):
         '''compute area under decoding curve score from Fy, *assuming* Fy[:,:,0] is the *true* classes score'''
         if Fy_TSy.ndim > 3:
             raise ValueError("Only for single models!")
@@ -629,7 +639,7 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
         return score
 
     # TODO[]: correct and ensure the goodness of fit score is actually working
-    def gof_score(self, X_TSd, Y_TSy, featdim=False):
+    def score_corr(self, X_TSd, Y_TSy, featdim=False):
         """compute a goodness-of-fit (gof) score for this fited model, as the correlation between the latent-space time-series.
 
         Args:
@@ -735,9 +745,9 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
                 if score is None:  # just call our score function
                     val = self.score(X_TSd[valid_idx, ...], Y_TSy[valid_idx, ...], Fy=Fyi_TSy)
                 elif score == 'audc':
-                    val = self.audc_score(Fyi_TSy)
+                    val = self.score_audc(Fyi_TSy)
                 elif score == 'gof':  # goodness of fit
-                    val = self.gof_score(X_TSd[valid_idx, ...], Y_TSy[valid_idx, ...])
+                    val = self.score_corr(X_TSd[valid_idx, ...], Y_TSy[valid_idx, ...])
                 elif callable(score):  # given score function
                     val = score(X_TSd[valid_idx, ...], Y_TSy[valid_idx, ...])
                 elif isinstance(score, 'str'):
@@ -898,11 +908,42 @@ class MultiCCA(BaseSequence2Sequence):
     def __init__(self, rank=1, reg=(1e-8, 1e-8), rcond=(1e-4, 1e-8), badEpThresh=6, badWinThresh=3, symetric=True,
                  center=True, CCA=True, outputscore: str = 'ip', whiten_alg: str = 'eigh', cxxp=True, temporal_basis=None,
                  # explicit args so sklearn can autoset and clone
-                 evtlabs=None, tau=None, offset=None, tau_ms=None, offset_ms=0, fs=None, normalize_sign=True,  **kwargs):
+                 evtlabs=None, tau=None, offset=None, tau_ms=None, offset_ms=0, fs=None, normalize_sign=True, score_type:str=None,  **kwargs):
+        """Sequence 2 Sequence learning using CCA as a bi-directional forward/backward learning method
+
+        Args:
+            rank (int, optional): The rank (number of components) of the model to fit. Defaults to 1.
+            reg (tuple, optional): Regularization strength for (spatial,temporal) components when performing the CCA fit. See `multiCCA.py::robust_whiten` for more information. Defaults to (1e-8, 1e-8).
+            rcond (tuple, optional): Recipol-condition-number (spatial,temporal) components when performing the CCA fit. See `multiCCA.py::robust_whiten` for more information.. Defaults to (1e-4, 1e-8).
+            symetric (bool, optional): Use a symetric whitener in the CCA fitting.  See `multiCCA.py` for more information. Defaults to True.
+            center (bool, optional): center the data before fitting the model. Defaults to True.
+            CCA (bool, optional): do we run CCA or PLS or a hybrid.  If True is CCA, if False is PLS.  If 2-tuple, then 1st entry means spatial whiten in the CCA and second entry means temporal whiten in the CCA. Defaults to True.
+            badEpThresh (int, optional): Bad epoch threshold for computing a robustified covariance matrix for the CCA fit.  See `utils.py::zero_outliers` for information on how the threshold is used, and `updateSummaryStatistics.py::updateSummaryStatistics` for usage in computing the summary statistics needed to compute a CCA model. Defaults to 6.
+            badWinThresh (int, optional): Bad temporal-window threshold for computing a robustified covariance matrix for the CCA fit.  N.B. by default a single window is 1/50th of a single trial. See `utils.py::zero_outliers` for information on how the threshold is used, and `updateSummaryStatistics.py::updateSummaryStatistics` for usage in computing the summary statistics needed to compute a CCA model. Defaults to 3.
+            outputscore (str, optional): _description_. Defaults to 'ip'.
+            whiten_alg (str, optional): The type of algorithm used for the whitening step of the CCA algorithm. One of 'eigh' or 'chol'.  See `multiCCA.py` for more information. Defaults to 'eigh'.
+            cxxp (bool, optional): _description_. Defaults to True.
+            temporal_basis (_type_, optional): As temporal basis is an array mapping from the raw sample temporal basis to a new parametric basis, such as the amplitude of a particular sinusoidal frequency. See `temporal_basis.py` for more information on the available types of basis. Defaults to None.
+            normalize_sign (bool, optional): When making the plots/models attempt to normalize the sign so different plots look more similar. Defaults to True.
+            score_type (str, optional): When computing the model-fit score by cross-validation, which type of score to compute.  One of: 'score_auc' for Area-under-curve classification score, or 'corr' for correlation based goodness of fit in the latent space fit quality. Defaults to None.
+            evtlabs ([ListStr,optional]): the event types to use for model fitting.  See `stim2event.py` for the support event types. Defautls to ('fe','re').
+            tau (int, optional): the length in samples of the stimulus response. Defaults to None.
+            offset (int, optional): offset from the event time for the response window. Defaults to None.
+            tau_ms (int, optional): the lenght in milliseconds of the stimulus response. Defaults to None
+            offset_ms (float, optional): the offset from the event time for the start of the response window.  Defaults to None.
+            fs (float, optional): the sampling rate of the data, used for coverting milliseconds to samples.  Defaults to None.
+            priorweight (float, Optional): the weighting in pseudo-samples for the prior estimate for the prediction noise variance.  Defaults to 120.
+            startup_correction (int, Optional): length in samples of addition startup correction where the noise-variance is artificially increased due to insufficient data.  Defaults to 100.
+            prediction_offsets (list-of-int, optional): set of offsets to test when performing prediction to check/adapt to stimulus to response latency changes.  Defaults to None.
+            centerY (bool, optional): center the stimulus-sequence information to be zero-mean per trial before fitting the response model.  Defaults to False.
+            nvirt_out (int, optional): number of virtual outputs to add when testing.  If <0 then this is a limit on the totoal nubmer of outputs if >0 then add this number additional virtual outputs.  Defaults to -20.
+            nocontrol_condn (float, optional): relative importance of correct prediction of nocontrol when no stimulus is present.  Defaults to .5
+            verb (int, optional): verbosity level, 0 is default, higher number means be more talky in debug messages.  Defaults to 0.
+        """
         super().__init__(evtlabs=evtlabs, tau=tau,  offset=offset, tau_ms=tau_ms,
                          offset_ms=offset_ms, fs=fs, outputscore=outputscore, **kwargs)
-        self.rank, self.reg, self.rcond, self.badEpThresh, self.badWinThresh, self.symetric, self.center, self.CCA, self.whiten_alg, self.cxxp, self.normalize_sign, self.temporal_basis = (
-            rank, reg, rcond, badEpThresh, badWinThresh, symetric, center, CCA, whiten_alg, cxxp, normalize_sign, temporal_basis)
+        self.rank, self.reg, self.rcond, self.badEpThresh, self.badWinThresh, self.symetric, self.center, self.CCA, self.whiten_alg, self.cxxp, self.normalize_sign, self.temporal_basis, self.score_type = (
+            rank, reg, rcond, badEpThresh, badWinThresh, symetric, center, CCA, whiten_alg, cxxp, normalize_sign, temporal_basis, score_type)
 
     def fit_cca(
             self, Cxx_dd, Cyx_yetd, Cyy_yetet, rank=None, reg=None, rcond=None, CCA=None, symetric=None,
@@ -923,7 +964,7 @@ class MultiCCA(BaseSequence2Sequence):
             symetric (bool, optional): flag if we require the robust-whitener used internally to use a symetric model. Defaults to None.
             whiten_alg (_type_, optional): the algorithm to use to find the robust whitener.  See: multiCCA.robust_whitener for more info. Defaults to None.
             temporal_basis (str|ndarray, optional): The temporal basis map used when fiting the `R_yet` parameters of the model.   This mapping can be used to reduce the number of parameters to fit in R_yet by sharing parameters between differnt time-points, outputs or stimulus-events.
-                            See 'temporal_basis.get_temproal_basis` for info on the types of basis maps currently supported. Defaults to None.
+                            See 'temporal_basis.get_temporal_basis` for info on the types of basis maps currently supported. Defaults to None.
 
         Returns:
             W_kd: the spatial filter mapping from sensors to estimated source activations.  This has shape (k,d) = (number sources, number sensors)
@@ -1033,7 +1074,7 @@ class MultiCCA(BaseSequence2Sequence):
             self.b_ = None
         return self
 
-    def cv_fit(self, X, Y, cv=None, fs=None, fit_params: dict = dict(), verbose: bool = 0,
+    def cv_fit(self, X, Y, cv=None, fs=None, fit_params: dict = dict(), verbose: bool = 0, 
                return_estimator: bool = True, calibrate_softmax: bool = True, retrain_on_all: bool = True, ranks=None):
         ''' cross validated fit to the data.  optimized wrapper for optimization of the model rank.'''
         if cv is None:
@@ -1075,7 +1116,10 @@ class MultiCCA(BaseSequence2Sequence):
                 self.fit_b(X[train_idx, ...])
                 # predict, forcing removal of copies of  tgt=0 so can score
                 Fyi = self.predict(X[valid_idx, ...], Y[valid_idx, ...], dedup0=False)
-                score = self.audc_score(Fyi)
+                if self.score_type == 'corr':
+                    score = self.score_corr(X[valid_idx, ...], Y[valid_idx, ...])
+                else:
+                    score = self.score_audc(Fyi)
                 if i == 0 and ri == 0:  # reshape Fy to include the extra model dim
                     Fy = np.zeros((len(ranks), Y.shape[0])+Fyi.shape[1:], dtype=np.float32)
                 Fy[ri, valid_idx, ..., :Fyi.shape[-1]] = Fyi[..., :Fy.shape[-1]]
@@ -1103,17 +1147,44 @@ class MultiCCACV(MultiCCA):
                  # other parms explicilty given so sklearn auto-set and clone works....
                  rank=1, reg=(1e-8, 1e-8), rcond=(1e-4, 1e-8), badEpThresh=6, symetric=True,
                  center=True, CCA=True, outputscore: str = 'ip', whiten_alg: str = 'eigh', cxxp=True, temporal_basis=None,
-                 evtlabs=None, tau=None, offset=None, tau_ms=None, offset_ms=0, fs=None, normalize_sign=True,
+                 evtlabs=None, tau=None, offset=None, tau_ms=None, offset_ms=0, fs=None, normalize_sign=True, score_type:str='audc',
                  **kwargs):
-        """wrapper which does an inner cv to fit the inner_cv_params
-
+        """wrapper which does an inner cv to fit the inner_cv_params of a MultiCCA model
         Args:
-            inner_cv (int, optional): [description]. Defaults to 5.
-        """
+            inner_cv (int|CrossValidation, optional): the number of inner folds to use. Defaults to 5.
+            inner_cv_params (dict, optional): dictionary of lists of parameters to test, using a similar format as that for `sklearn.model_selection.cross_validate`'s 'fit_params' option.  Defaults to None.
+            rank (int, optional): The rank (number of components) of the model to fit. Defaults to 1.
+            reg (tuple, optional): Regularization strength for (spatial,temporal) components when performing the CCA fit. See `multiCCA.py::robust_whiten` for more information. Defaults to (1e-8, 1e-8).
+            rcond (tuple, optional): Recipol-condition-number (spatial,temporal) components when performing the CCA fit. See `multiCCA.py::robust_whiten` for more information.. Defaults to (1e-4, 1e-8).
+            symetric (bool, optional): Use a symetric whitener in the CCA fitting.  See `multiCCA.py` for more information. Defaults to True.
+            center (bool, optional): center the data before fitting the model. Defaults to True.
+            CCA (bool, optional): do we run CCA or PLS or a hybrid.  If True is CCA, if False is PLS.  If 2-tuple, then 1st entry means spatial whiten in the CCA and second entry means temporal whiten in the CCA. Defaults to True.
+            badEpThresh (int, optional): Bad epoch threshold for computing a robustified covariance matrix for the CCA fit.  See `utils.py::zero_outliers` for information on how the threshold is used, and `updateSummaryStatistics.py::updateSummaryStatistics` for usage in computing the summary statistics needed to compute a CCA model. Defaults to 6.
+            badWinThresh (int, optional): Bad temporal-window threshold for computing a robustified covariance matrix for the CCA fit.  N.B. by default a single window is 1/50th of a single trial. See `utils.py::zero_outliers` for information on how the threshold is used, and `updateSummaryStatistics.py::updateSummaryStatistics` for usage in computing the summary statistics needed to compute a CCA model. Defaults to 3.
+            outputscore (str, optional): _description_. Defaults to 'ip'.
+            whiten_alg (str, optional): The type of algorithm used for the whitening step of the CCA algorithm. One of 'eigh' or 'chol'.  See `multiCCA.py` for more information. Defaults to 'eigh'.
+            cxxp (bool, optional): _description_. Defaults to True.
+            temporal_basis (_type_, optional): As temporal basis is an array mapping from the raw sample temporal basis to a new parametric basis, such as the amplitude of a particular sinusoidal frequency. See `temporal_basis.py` for more information on the available types of basis. Defaults to None.
+            normalize_sign (bool, optional): When making the plots/models attempt to normalize the sign so different plots look more similar. Defaults to True.
+            score_type (str, optional): When computing the model-fit score by cross-validation, which type of score to compute.  One of: 'score_auc' for Area-under-curve classification score, or 'corr' for correlation based goodness of fit in the latent space fit quality. Defaults to None.
+            evtlabs ([ListStr,optional]): the event types to use for model fitting.  See `stim2event.py` for the support event types. Defautls to ('fe','re').
+            tau (int, optional): the length in samples of the stimulus response. Defaults to None.
+            offset (int, optional): offset from the event time for the response window. Defaults to None.
+            tau_ms (int, optional): the lenght in milliseconds of the stimulus response. Defaults to None
+            offset_ms (float, optional): the offset from the event time for the start of the response window.  Defaults to None.
+            fs (float, optional): the sampling rate of the data, used for coverting milliseconds to samples.  Defaults to None.
+            priorweight (float, Optional): the weighting in pseudo-samples for the prior estimate for the prediction noise variance.  Defaults to 120.
+            startup_correction (int, Optional): length in samples of addition startup correction where the noise-variance is artificially increased due to insufficient data.  Defaults to 100.
+            prediction_offsets (list-of-int, optional): set of offsets to test when performing prediction to check/adapt to stimulus to response latency changes.  Defaults to None.
+            centerY (bool, optional): center the stimulus-sequence information to be zero-mean per trial before fitting the response model.  Defaults to False.
+            nvirt_out (int, optional): number of virtual outputs to add when testing.  If <0 then this is a limit on the totoal nubmer of outputs if >0 then add this number additional virtual outputs.  Defaults to -20.
+            nocontrol_condn (float, optional): relative importance of correct prediction of nocontrol when no stimulus is present.  Defaults to .5
+            verb (int, optional): verbosity level, 0 is default, higher number means be more talky in debug messages.  Defaults to 0.
+        """        
         super().__init__(rank=rank, reg=reg, rcond=rcond, badEpThresh=badEpThresh, symetric=symetric, center=center,
                          CCA=CCA, outputscore=outputscore, whiten_alg=whiten_alg, cxxp=cxxp, temporal_basis=temporal_basis,
                          evtlabs=evtlabs, tau=tau, offset=offset, tau_ms=tau_ms, offset_ms=offset_ms, fs=fs,
-                         normalize_sign=normalize_sign, **kwargs)
+                         normalize_sign=normalize_sign, score_type=score_type, **kwargs)
         self.inner_cv_params, self.inner_cv = (inner_cv_params, inner_cv)
 
     def fit(self, X, Y, fs=None, inner_cv_params: dict = None, retrain_on_all: bool = True):
@@ -1130,7 +1201,7 @@ class MultiCCACV(MultiCCA):
         """
         if inner_cv_params is None:
             inner_cv_params = self.inner_cv_params
-        if inner_cv_params is not None:  # inner CV for fit-params
+        if inner_cv_params is not None or self.inner_cv is not None:  # inner CV for fit-params
             self.cv_fit(X, Y, fs=fs, cv=self.inner_cv, fit_params=inner_cv_params, retrain_on_all=retrain_on_all)
         else:
             super().fit(X, Y, fs=fs)
@@ -1167,11 +1238,12 @@ class MultiCCACV(MultiCCA):
         Cxxs, Cyxs, Cyys = np.stack(Cxxs, 0), np.stack(Cyxs, 0), np.stack(Cyys, 0)
         return Cxxs, Cyxs, Cyys
 
-    def cv_fit(self, X, Y, cv=None, fs=None, verbose: bool = 0, score_type: str = 'audc', return_estimator: bool = True,
+    def cv_fit(self, X, Y, cv=None, fs=None, verbose: bool = 0, score_type: str = None, return_estimator: bool = True,
                calibrate_softmax: bool = True, retrain_on_all: bool = True, ranks=None, fit_params: dict = None):
         ''' cross validated fit to the data.  optimized wrapper for optimization of the model rank.'''
         if cv is None:
             cv = self.inner_cv_params
+
         # fast path for cross validation over rank
         cv_in = cv.copy() if hasattr(cv, 'copy') else cv  # save copy of cv info for later
         if fit_params is None:
@@ -1218,6 +1290,7 @@ class MultiCCACV(MultiCCA):
 
         maxrank = max(ranks)
         self.rank = maxrank
+        if score_type is None:  score_type = self.score_type
         scores_cv = [[[] for _ in ranks] for _ in fit_configs]  # double nested list of lists..
         for i, (train_idx, valid_idx) in enumerate(cv):
             if verbose > 0:
@@ -1252,7 +1325,7 @@ class MultiCCACV(MultiCCA):
                         score_y, _ = corr_cov(Cxxval, Cyxval, Cyyval, self.W_, self.R_)
                         score = score_y[0]  # strip silly y dim
                     else:
-                        score = self.audc_score(Fyi)
+                        score = self.score_audc(Fyi)
                     scores_cv[ci][ri].append(score)
 
         # 3) get the *best* rank
@@ -1408,6 +1481,17 @@ class FwdLinearRegression(BaseSequence2Sequence):
     def __init__(
             self, evtlabs=None, tau=None, offset=None, tau_ms=None, offset_ms=0, fs=None, reg=None, rcond=1e-6,
             badEpThresh=6, center=True, **kwargs):
+        """ Sequence 2 Sequence learning using forward linear regression equation  X = A*Y
+
+        Args:
+            evtlabs ([ListStr,optional]): the event types to use for model fitting.  See `stim2event.py` for the support event types. Defautls to ('fe','re').
+            tau (int, optional): the length in samples of the stimulus response. Defaults to None.
+            offset (int, optional): offset from the event time for the response window. Defaults to None.
+            tau_ms (int, optional): the lenght in milliseconds of the stimulus response. Defaults to None
+            offset_ms (float, optional): the offset from the event time for the start of the response window.  Defaults to None.
+            fs (float, optional): the sampling rate of the data, used for coverting milliseconds to samples.  Defaults to None.
+            verb (int, optional): verbosity level, 0 is default, higher number means be more talky in debug messages.  Defaults to 0.
+        """        
         super().__init__(evtlabs=evtlabs, tau=tau, offset=offset, tau_ms=tau_ms, offset_ms=offset_ms, fs=fs, **kwargs)
         self.reg, self.rcond, self.badEpThresh, self.center = reg, rcond, badEpThresh, center
         if offset and offset != 0:
@@ -1621,7 +1705,7 @@ class FwdLinearRegressionCV(FwdLinearRegression):
 
                 # predict, forcing removal of copies of  tgt=0 so can score
                 Fyi = self.predict(X[valid_idx, ...], Y[valid_idx, ...], dedup0=False)
-                score = self.audc_score(Fyi)
+                score = self.score_audc(Fyi)
 
                 # save the prediction for later
                 if i == 0 and ci == 0:  # reshape Fy to include the extra model dim
@@ -1675,6 +1759,19 @@ class BwdLinearRegression(BaseSequence2Sequence):
     def __init__(
             self, evtlabs=None, tau=None, offset=None, tau_ms=None, offset_ms=0, fs=None, reg=None, badEpThresh=6,
             center=True, compdiagcxx: bool = True, temporal_basis: str = None, **kwargs):
+        """ Sequence 2 Sequence learning using backward linear regression equation  W*X = Y
+
+        Args:
+            evtlabs ([ListStr,optional]): the event types to use for model fitting.  See `stim2event.py` for the support event types. Defautls to ('fe','re').
+            tau (int, optional): the length in samples of the stimulus response. Defaults to None.
+            offset (int, optional): offset from the event time for the response window. Defaults to None.
+            tau_ms (int, optional): the lenght in milliseconds of the stimulus response. Defaults to None
+            offset_ms (float, optional): the offset from the event time for the start of the response window.  Defaults to None.
+            badEpThresh (int, optional): Bad epoch threshold for computing a robustified covariance matrix for the CCA fit.  See `utils.py::zero_outliers` for information on how the threshold is used, and `updateSummaryStatistics.py::updateSummaryStatistics` for usage in computing the summary statistics needed to compute a CCA model. Defaults to 6.
+            temporal_basis (_type_, optional): As temporal basis is an array mapping from the raw sample temporal basis to a new parametric basis, such as the amplitude of a particular sinusoidal frequency. See `temporal_basis.py` for more information on the available types of basis. Defaults to None.
+            fs (float, optional): the sampling rate of the data, used for coverting milliseconds to samples.  Defaults to None.
+            verb (int, optional): verbosity level, 0 is default, higher number means be more talky in debug messages.  Defaults to 0.
+        """        
         super().__init__(evtlabs=evtlabs, tau=tau, offset=offset, tau_ms=tau_ms, offset_ms=offset_ms, fs=fs, **kwargs)
         # TODO[]: fit the bias term while learning
         self.reg, self.badEpThresh, self.center, self.compdiagcxx, self.temporal_basis = \
@@ -1924,7 +2021,7 @@ class BwdLinearRegressionCV(BwdLinearRegression):
 
                 # predict, forcing removal of copies of  tgt=0 so can score
                 Fyi = self.predict(X[valid_idx, ...], Y[valid_idx, ...], dedup0=False)
-                score = self.audc_score(Fyi)
+                score = self.score_audc(Fyi)
 
                 # save the prediction for later
                 if i == 0 and ci == 0:  # reshape Fy to include the extra model dim
@@ -1983,6 +2080,25 @@ class LinearSklearn(BaseSequence2Sequence):
             evtlabs=None, tau=None, offset=None, tau_ms=None, offset_ms=0, fs=None, labelizeY=False,
             ignore_unlabelled=True, chunk_size: int = 1, chunk_labeller: str = None, badEpThresh=None,
             temporal_basis: str = None, **kwargs):
+        """_summary_
+
+        Args:
+            clsfr (str|sklearn.model, optional): The base classifier to use.  If string then one-of; cca,bwd,fwd,ridge,lr,svr,svc,linearsklearn.  Defaults to "lr".
+            clsfr_args (dict, optional): arguments to pass to the classifier constructor. Defaults to {}.
+            evtlabs (_type_, optional): _description_. Defaults to None.
+            evtlabs ([ListStr,optional]): the event types to use for model fitting.  See `stim2event.py` for the support event types. Defautls to ('fe','re').
+            tau (int, optional): the length in samples of the stimulus response. Defaults to None.
+            offset (int, optional): offset from the event time for the response window. Defaults to None.
+            tau_ms (int, optional): the lenght in milliseconds of the stimulus response. Defaults to None
+            offset_ms (float, optional): the offset from the event time for the start of the response window.  Defaults to None.
+            fs (float, optional): the sampling rate of the data, used for coverting milliseconds to samples.  Defaults to None.
+            chunk_size (int, optional): the number of samples between time-windows making a new classification problem. Defaults to 1, which means every sample is a new example.
+            labelizeY (bool, optional): flag if whe should labelize-Y such that each unique combination of stimulus-event values is a new class. Defaults to False.
+            ignore_unlabelled (bool, optional): flag if we should discard data-windows for which no stimulus events are non-zero. Defaults to True.
+            chunk_labeller (_type_, optional): funtion name to use to convert from stimulus-event information to classes. Defaults to None.
+            badEpThresh (int, optional): Bad epoch threshold for computing a robustified covariance matrix for the CCA fit.  See `utils.py::zero_outliers` for information on how the threshold is used, and `updateSummaryStatistics.py::updateSummaryStatistics` for usage in computing the summary statistics needed to compute a CCA model. Defaults to 6.
+            temporal_basis (_type_, optional): As temporal basis is an array mapping from the raw sample temporal basis to a new parametric basis, such as the amplitude of a particular sinusoidal frequency. See `temporal_basis.py` for more information on the available types of basis. Defaults to None.
+        """
         super().__init__(evtlabs=evtlabs, tau=tau, offset=offset, tau_ms=tau_ms, offset_ms=offset_ms, fs=fs, **kwargs)
         self.clsfr, self.clsfr_args, self.labelizeY, self.badEpThresh, self.ignore_unlabelled, self.chunk_size, self.chunk_labeller, self.temporal_basis = (
             clsfr, clsfr_args, labelizeY, badEpThresh, ignore_unlabelled, chunk_size, chunk_labeller, temporal_basis)

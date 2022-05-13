@@ -7,7 +7,7 @@ from mindaffectBCI.decoder.offline.load_p300_prn import load_p300_prn
 from mindaffectBCI.decoder.offline.load_openBMI import load_openBMI
 from mindaffectBCI.decoder.offline.load_cocktail import load_cocktail
 #  Copyright (c) 2019 MindAffect B.V. 
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -30,34 +30,74 @@ from mindaffectBCI.decoder.offline.load_ninapro_db2 import load_ninapro_db2
 from mindaffectBCI.decoder.offline.load_mindaffectBCI import load_mindaffectBCI
 from mindaffectBCI.decoder.utils import testSignal
 
+# List of root directories to search for the experiment sub-directory
 dataroots = ['~/data/bci',
             'G://Shared drives/Data/experiments',
+            'G://Shared drives/Data',
             '/content/drive/Shareddrives/Data',
+            '/content/drive/Shareddrives',
             '/home/shared/drive/',
             'D://',
             '.'
             ]
 
 def add_dataroot(dataroot):
+    """add a new data root directory to search for dataset sub-directories
+
+    Args:
+        dataroot (str): directory to add to the dataroots set
+    """    
     global dataroots
     dataroots.append(dataroot)
 
 def set_dataroot(dataroot):
+    """set the list of rood directories to search for dataset sub-directories
+
+    Args:
+        dataroots (list-of-str): list of directory names to search for data root directories
+    """    
     global dataroots
     dataroots = [dataroot] if isinstance(dataroot,str) else dataroot
 
-def get_dataroot(dataroots=None):
+def get_dataroot(dataroots=None,subdir=None):
+    """search through the list of data-roots to find a sub-directory which contains the given experiment sub-directory
+
+    Args:
+        dataroots (list-of-str, optional): list of data root directories.  If None then use the system default list. Defaults to None.
+        subdir (str, optional): the experiment specific sub-directory to search for.  If None then just the first data root which exists on this machine. Defaults to None.
+
+    Returns:
+        str: a data root directory which exists on this machine and contains the desired sub-directory
+    """    
+    dataroot=None
     if dataroots is None:
         dataroots = globals().get('dataroots')
     if dataroots is not None:
         # check whith dataroots are available
-        for dr in dataroots:
-            if os.path.exists(os.path.expanduser(dr)):
-                dataroot = os.path.expanduser(dr)
-                break
+        if subdir is not None:
+            for dr in dataroots:
+                if os.path.exists(os.path.join(os.path.expanduser(dr),subdir)):
+                    dataroot = os.path.expanduser(dr)
+                    break
+        # if got here, either no subdir or didn't find subdir
+        if dataroot is None:
+            for dr in dataroots:
+                if os.path.exists(os.path.expanduser(dr)):
+                    dataroot = os.path.expanduser(dr)
+                    break
     return dataroot
 
 def load_plos_one(datadir, ch_names=None, fs_out=None, **kwargs):
+    """dataset specific loader for the plos-one dataset
+
+    Args:
+        datadir (_type_): _description_
+        ch_names (_type_, optional): _description_. Defaults to None.
+        fs_out (_type_, optional): _description_. Defaults to None.
+
+    Returns:
+        _type_: _description_
+    """    
     if ch_names is None:
         ch_names = ['Fp1',
             'AF7','AF3','F1','F3','F5','F7','FT7','FC5','FC3','FC1','C1','C3','C5',
@@ -71,8 +111,9 @@ def load_plos_one(datadir, ch_names=None, fs_out=None, **kwargs):
 def plos_one():
     '''generate the directory+filename info for the plos_one noisetagging dataset'''
     loader = load_plos_one # function to call to load the dataset
-    datadir = get_dataroot()
-    datadir = os.path.join(os.path.expanduser(datadir),'own_experiments/noisetagging_v3/')
+    expt = 'external_data/plos_one/'
+    datadir = get_dataroot(subdir=expt)
+    datadir = os.path.join(os.path.expanduser(datadir),expt)
     sessdir = glob(os.path.join(datadir, 's[0-9]*'))
     #sessdir = ['s{:d}'.format(i) for i in range(1, 12)]
     sessfn = 'traindata.mat'
@@ -81,17 +122,18 @@ def plos_one():
 
 def lowlands():
     '''generate the directory+filename info for the lowlands noisetagging dataset'''
+    expt = 'external_data/lowlands'
     loader = load_brainstream
-    datadir = get_dataroot()
-    datadir = os.path.join(datadir,'own_experiments/lowlands')
+    datadir = get_dataroot(subdir=expt)
+    datadir = os.path.join(datadir,expt)
     filenames = glob(os.path.join(datadir, '*_tr_train_1.mat'))
     return (loader, filenames, datadir)
 
 def p300_prn(label:str=None):
     '''generate dataset+filename for p300-prn2'''
-    loader = load_p300_prn # function to call to load the dataset
-    datadir = get_dataroot()
     expt = 'own_experiments/visual/p300_prn_2'
+    loader = load_p300_prn # function to call to load the dataset
+    datadir = get_dataroot(subdir=expt)
     filenames = glob(os.path.join(datadir, expt, '*/*/jf_prep/*flash.mat')) + \
                 glob(os.path.join(datadir, expt, '*/*/jf_prep/*flip.mat'))
     if label is not None:
@@ -101,8 +143,8 @@ def p300_prn(label:str=None):
 def tactileP3():
     '''generate dataset+filename for tactile P3'''
     loader = load_p300_prn # function to call to load the dataset
-    datadir = get_dataroot()
     expt = 'own_experiments/tactile/selective_parallel_attention/P3speller/Speller'
+    datadir = get_dataroot(subdir=expt)
     filenames = glob(os.path.join(datadir, expt, '*/*/jf_prep/*offline.mat'))
     return (loader, filenames, datadir)
 
@@ -116,30 +158,31 @@ def tactile_PatientStudy():
 
 def openBMI(dstype="SSVEP"):
     loader = load_openBMI
-    datadir = get_dataroot()
-    datadir = os.path.join(datadir,'external_data/gigadb/openBMI')
+    expt = 'external_data/gigadb/openBMI'
+    datadir = get_dataroot(subdir=expt)
+    datadir = os.path.join(datadir,expt)
     filenames = glob(os.path.join(datadir, 'sess*/s*/sml_*'+ dstype + '.mat')) + \
                 glob(os.path.join(datadir, 'sml_*'+ dstype + '.mat'))
     return (loader, filenames, datadir)
 
 def twofinger():
     loader = load_twofinger
-    datadir = get_dataroot()
     exptdir = 'external_data/twente/twofinger'
+    datadir = get_dataroot(subdir=exptdir)
     filenames =  glob(os.path.join(datadir, exptdir, 'S??.mat'))
     return (loader, filenames, datadir)
 
 def brains_on_fire_online():
     loader = load_brainsonfire
-    datadir = get_dataroot()
     exptdir = 'own_experiments/motor_imagery/brainsonfire/brains_on_fire_online'
+    datadir = get_dataroot(subdir=exptdir)
     filenames =  glob(os.path.join(datadir, exptdir, 'subject*/raw_buffer/0001'))
     return (loader, filenames, datadir)
 
 def brains_on_fire():
     loader = load_brainsonfire
-    datadir = get_dataroot()
     exptdir = 'own_experiments/motor_imagery/brainsonfire/brains_on_fire'
+    datadir = get_dataroot(subdir=exptdir)
     filenames =  glob(os.path.join(datadir, exptdir, 'Subject*/raw_buffer/0001'))
     return (loader, filenames, datadir)
 
@@ -151,23 +194,23 @@ def mTRF_audio():
 
 def ninapro_db2():
     loader = load_ninapro_db2
-    datadir = get_dataroot()
     exptdir="external_data/ninapro"
+    datadir = get_dataroot(subdir=exptdir)
     filenames = glob(os.path.join(datadir, exptdir, 's*', '*E1*.mat'))
     return (loader, filenames, datadir)
 
 def cocktail():
     loader = load_cocktail
-    datadir = get_dataroot()
     exptdir="external_data/dryad/Cocktail Party"
+    datadir = get_dataroot(subdir=exptdir)
     filenames = glob(os.path.join(datadir, exptdir, 'EEG', 'Subject*'))
     return (loader,filenames,datadir)
 
 
 def mark_EMG():
     loader = load_mark_EMG
-    datadir = get_dataroot()
     exptdir="own_experiments/emg/facial"
+    datadir = get_dataroot(subdir=exptdir)
     filenames = glob(os.path.join(datadir, exptdir, 'training_data_SV_*.mat'))
     return (loader,filenames,datadir)    
 
@@ -277,9 +320,18 @@ def mne_eegbci():
 def mindaffectBCI(exptdir, regexp:str=None, exregexp:str=None, **args):
     loader = load_mindaffectBCI
     if not os.path.exists(exptdir):
-        exptdir = os.path.join(get_dataroot(),exptdir)
+        exptdir = os.path.join(get_dataroot(subdir=exptdir),exptdir)
     filenames = glob(os.path.join(os.path.expanduser(exptdir), '**', 'mindaffectBCI*.txt'),recursive=True)
     return loader,filenames,exptdir
+
+
+def kaggle():
+    """generate the dataset directory, loader for the mindaffectBCI kaggle dataset
+
+    Returns:
+        _type_: _description_
+    """    
+    return mindaffectBCI('external_data/kaggle')
 
 
 def testdataset(fn, **kwargs):
@@ -328,7 +380,8 @@ def test_loader(loadfn, filenames, dataroot, **kwargs):
 
 
 def get_dataset(dsname, regexp:str=None, exregexp:str=None, dataroots:list=None, *args, **kwargs):
-    dataroot = get_dataroot(dataroots)
+    if dataroots:
+        set_dataroot(dataroots)
 
     if dsname == 'openBMI_SSVEP':
         loader, filenames, root =  openBMI("SSVEP")

@@ -1,5 +1,5 @@
 #  Copyright (c) 2019 MindAffect B.V. 
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -188,7 +188,7 @@ def stim2event(M:np.ndarray, evtypes=('re','fe'), axis:int=-2, oM:np.ndarray=Non
                               equals_subarray(M, (b,a), axis))
 
         elif etype.startswith("re") or etype in ("onset",):
-            if etype.startswith("re") and len(etype)>2:
+            if etype.startswith('re') and len(etype)>2:
                 val = [float(e) for e in etype[2:].split(',')]
                 F, s2estate, elab = riseto(M, val, axis, oM, etype)
             else:
@@ -244,15 +244,15 @@ def stim2event(M:np.ndarray, evtypes=('re','fe'), axis:int=-2, oM:np.ndarray=Non
             elab = s2estate
 
 
-        if F.shape[:-1] == M.shape[:-1] and (F.shape[-1]==1 or F.shape[-1]==M.shape[-1]) :
+        if len(evtypes)==1:
+            E = F.astype(E.dtype)
+            evtlabs = elab
+            s2estates = s2estate
+        elif F.shape[:-1] == M.shape[:-1] and (F.shape[-1]==1 or F.shape[-1]==M.shape[-1]) :
             # single output to add
             E[..., ei] = F
             evtlabs.append(elab)
             s2estates.append(s2estate)
-        elif len(evtypes)==1:
-            E = F.astype(E.dtype)
-            evtlabs = elab
-            s2estates = s2estate
         else:
             raise ValueError("Cant (currently) mix direct and indirect encodings")
         
@@ -581,7 +581,7 @@ def oddeven_pattern_reversal(M,axis,oM=None,etype='oddeven_pattern_reversal', va
 
     Returns:
         [type]: [description]
-    """    
+    """
     if vals is None:
         vals = np.unique(M)
         vals = vals[vals!=0] # strip 0
@@ -677,7 +677,10 @@ def output2event(M,axis=1,oM=None,etype=None):
     Returns:
         [type]: [description]
     """
-    labs = ["o{}.e{}".format(i,e) for i in range(M.shape[2]) for e in range(M.shape[3])]
+    if M.ndim==3:
+        labs = ["o{}".format(i) for i in range(M.shape[2])]
+    else:
+        labs = ["o{}.e{}".format(i,e) for i in range(M.shape[2]) for e in range(M.shape[3])]
     M = M.reshape(M.shape[:2]+(1,)+M.shape[2:]) # shift right by 1
     return M, "output2event", labs
 
@@ -799,9 +802,31 @@ def rewrite_levels(M,axis,oM=None,etype=None,level_dict:dict=None):
         F[M==k]=v
     return F, lambda M,axis,oM,etype: rewrite_levels(M,axis,oM,etype,level_dict=level_dict), None
 
+def slice_outputs(Y_TSye, axis=1, oM=None, etype=None, output_idx=None):
+    """select a sub-set of outputs from the full set
+
+    Args:
+        M (): the stim-sequence to slice from
+        axis (int, optional): the time axis in M. N.B. we assume the outputs axis is axis+1. Defaults to 1.
+        output_idx (_type_, optional): the indices along this axis to select. Defaults to None.
+
+    Returns:
+        (M, apply_args, evtlabs): 
+              M - the stim-seq with the selected outputs
+              apply_args - args to apply this transformation to new data
+              evtlabs - list-of-str with the names of the new events
+    """
+    if output_idx is None: return Y_TSye, None, np.arange(Y_TSye.shape[axis+1])
+    if not hasattr(output_idx,'__iter__'): output_idx=(output_idx,)
+    assert axis in (0,1), 'Only time in 2nd dim is'
+    if axis==0:
+        Y_TSye=Y_TSye[:,output_idx,...]
+    elif axis==1:
+        Y_TSye=Y_TSye[:,:,output_idx,...] 
+    return Y_TSye, output_idx, ["o{}".format(o) for o in tuple(output_idx)]
 
 
-def plot_stim_encoding(Y_TSy,Y_TSye,evtlabs=None,fs=None,times=None,outputs=None,suptitle:str="stim encoding",plot_all_zero_events:bool=True,block:bool=False):
+def plot_stim_encoding(Y_TSy,Y_TSye=None,evtlabs=None,fs=None,times=None,outputs=None,suptitle:str="stim encoding",plot_all_zero_events:bool=True,block:bool=False):
     """plot a stimulus encoding to debug if the stimulus encoding transformations are correct
 
     Args:
@@ -842,19 +867,19 @@ def plot_stim_encoding(Y_TSy,Y_TSye,evtlabs=None,fs=None,times=None,outputs=None
     for ti in range(Y_TSy.shape[0]):
         plt.sca(ax[ti][0])
         if Y_TSy is not None:
-            plt.plot(times, (Y_TSy[ti,...]/yscale + np.arange(Y_TSy.shape[-1])[np.newaxis,:])/Y_TSy.shape[-1],'.-')
+            plt.plot(times, (Y_TSy[ti,...]/yscale + np.arange(Y_TSy.shape[-1])[np.newaxis,:]),'.-')
             plt.grid(True)
-            plt.title('Y-raw (keep={})'.format(np.flatnonzero(keep_y)))
+            plt.title('Trial#{} Y-raw (keep={})'.format(ti,np.flatnonzero(keep_y)))
             plt.xlabel('time (seconds)')
-            plt.ylabel('Trial#')
+            plt.ylabel('Output+level')
         if Y_TSye is not None:
             plt.sca(ax[ti][1])
             Y_TS_ye = np.reshape(Y_TSye,Y_TSye.shape[:-2]+(-1,))
-            plt.plot(times, (Y_TS_ye[ti,...]/yescale + np.arange(Y_TS_ye.shape[-1])[np.newaxis,:])/Y_TSye.shape[-1]/Y_TSye.shape[-2],'.-')
+            plt.plot(times, (Y_TS_ye[ti,...]/yescale + np.arange(Y_TS_ye.shape[-1])[np.newaxis,:])/Y_TSye.shape[-1],'.-')
             plt.grid(True)
-            plt.title('Yevt {}  (Y={})'.format(evtlabs,np.flatnonzero(keep_ye)))
+            plt.title('Trail#{} Yevt {}  (Y={})'.format(ti, evtlabs,np.flatnonzero(keep_ye)))
             plt.xlabel('time (seconds)')
-            plt.ylabel('Trial#')
+            plt.ylabel('Output+Event+Level')
     if suptitle is not None:
         plt.suptitle(suptitle)
     plt.show(block=block)
@@ -868,11 +893,14 @@ def testcase():
 
     print("Raw  :{}".format(M))
 
-    e,l, _ = stim2event(M.T, 'hotyon_re', axis=-2)
+    e,_, l = stim2event(M.T, 'slice_outputs', axis=0, output_idx=[0])
     for s,v in zip(e.T,l): print("{}:{}".format(v,s))
 
-    e,l,_ = stim2event(M, 'rewrite_levels', level_dict={1:2,2:3})
-    e2,l2,_ = stim2event(M,l)
+    e,_, l = stim2event(M.T, 'hotyon_re', axis=-2)
+    for s,v in zip(e.T,l): print("{}:{}".format(v,s))
+
+    e,_,l = stim2event(M, 'rewrite_levels', level_dict={1:2,2:3})
+    e2,_,l2 = stim2event(M,l)
     assert np.all(e==e2)
 
 
