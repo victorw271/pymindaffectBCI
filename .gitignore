@@ -14,8 +14,14 @@ __pycache__
 *dist*
 *.ipynb_checkpoints*
 *.png
+<<<<<<< HEAD
 *.jpg
 *.pk
+=======
+*.pk
+*.jpg
+*.jpeg
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 description.xml
 calibration_data*
 *.egg-info

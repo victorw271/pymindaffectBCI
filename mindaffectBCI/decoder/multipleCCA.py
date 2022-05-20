@@ -1,5 +1,9 @@
 #  Copyright (c) 2019 MindAffect B.V. 
+<<<<<<< HEAD
 #  Author: Jason Farquhar <jadref@gmail.com>
+=======
+#  Author: Jason Farquhar <jason@mindaffect.nl>
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -18,9 +22,14 @@
 import numpy as np
 import warnings
 
+<<<<<<< HEAD
 def multipleCCA(Cxx_dd:np.ndarray=None, Cyx_metd:np.ndarray=None, Cyy_metet:np.ndarray=None,
                 reg:float=1e-9, rank:int=1, CCA:bool=True, rcond:float=(1e-8,1e-8), 
                 symetric:bool=False, whiten_alg:str="eigh", normalize_sign:bool=True):
+=======
+def multipleCCA(Cxx=None, Cxy=None, Cyy=None,
+                reg=1e-8, rank=1, CCA=True, rcond=1e-4, symetric=False):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     '''
     Compute multiple CCA decompositions using the given summary statistics
       [J,W,R]=multiCCA(Cxx_dd,Cyx_metd,Cyy_metet,regx,regy,rank,CCA)
@@ -136,8 +145,13 @@ def multipleCCA(Cxx_dd:np.ndarray=None, Cyx_metd:np.ndarray=None, Cyy_metet:np.n
 
         # SVD for the double  whitened cross covariance
         #N.B. Rm=((nE*tau),rank),lm=(rank),Wm=(rank,d)
+<<<<<<< HEAD
         Rm_or, lm_r, Wm_rm = np.linalg.svd(isqrtCyyCyxmisqrtCxx_om, full_matrices=False)  
         Wm_mr = Wm_rm.T  # (d,rank) 
+=======
+        Rm, lm, Wm = np.linalg.svd(isqrtCxxCxymisqrtCyy, full_matrices=False)  
+        Wm = Wm.T  # (d,rank)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
         # include relative component weighting directly in the  Left/Right singular values
         nlm = (lm_r / np.max(lm_r)) if np.max(lm_r)>0 else np.ones(lm_r.shape,dtype=lm_r.dtype)  # normalize so predictions have unit average norm
@@ -204,9 +218,15 @@ def robust_whitener(C:np.ndarray, reg:float=0, rcond:float=1e-6, symetric:bool=T
         verb (int, optional): verbosity level. Defaults to 0.
 
     Returns:
+<<<<<<< HEAD
         W_dk (np.ndarray): The whitening matrix
         iW_dk (np.ndarray): The inverse whitening matrix
     """
+=======
+        W (np.ndarray): The whitening matrix
+        iW (np.ndarray): The inverse whitening matrix
+    """    
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     assert not np.any(np.isnan(C.ravel())) and not np.any(np.isinf(C.ravel())), "NaN or Inf in inputs!"
 
     # ensure symetric
@@ -288,6 +308,7 @@ def robust_whitener(C:np.ndarray, reg:float=0, rcond:float=1e-6, symetric:bool=T
             
     else:
         warnings.warn('Degenerate C matrices input!')
+<<<<<<< HEAD
         sqrtC_dk = np.eye(C.shape[0], dtype=C.dtype)
         isqrtC_dk = sqrtC_dk
     return isqrtC_dk, sqrtC_dk
@@ -295,6 +316,13 @@ def robust_whitener(C:np.ndarray, reg:float=0, rcond:float=1e-6, symetric:bool=T
 
 def edge_reg(N:int,alpha:float=10,C:float=1, symetric:bool=False):
     """generate an edge penalizing regulazor
+=======
+        sqrtC = np.array(1.0, dtype=C.dtype)
+        isqrtC = np.array(1.0, dtype=C.dtype)
+    return (isqrtC, isqrtC)
+
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     Args:
         N (int): length of regularizor to make
@@ -352,6 +380,7 @@ def cvSupervised(Xe, Me, stimTimes, evtlabs=('re', 'fe'), n_splits=10, rank=1):
     return (W, R, Fy)
     
 
+<<<<<<< HEAD
 def fit_predict(X_TSd, Y_TSye, tau:int=10, offset:int=0, fs:float=100, 
                 evtlabs:list=None, outputs:list=None, ch_names:list=None, label:str=None,
                 center:bool=True, unitnorm:bool=True, centerY:bool=False,
@@ -403,8 +432,45 @@ def fit_predict_plot(X_TSd, Y_TSye, tau:int=10, offset:int=0, fs:float=100,
     from mindaffectBCI.decoder.decodingCurveSupervised import plot_decoding_curve
     from mindaffectBCI.decoder.updateSummaryStatistics import plot_summary_statistics, plot_factoredmodel, plot_trial, plot_subspace, plot_erp
     from mindaffectBCI.decoder.analyse_datasets import plot_trial_summary
+=======
+def testcase():
+    from mindaffectBCI.decoder.utils import testNoSignal, testSignal, sliceData, sliceY
+    #from multipleCCA import *
+    if False:
+        X, Y, st = testNoSignal()
+    else:
+        X, Y, st, A, B = testSignal(tau=10, noise2signal=10)
+
+    Y_true = Y[:, :, 0:1, :] if Y.ndim > 3 else Y[:, 0:1, :] # N.B. hack with [0] to stop removal of dim...
+    from mindaffectBCI.decoder.updateSummaryStatistics import updateSummaryStatistics, plot_summary_statistics, plot_factoredmodel
+    Cxx, Cxy, Cyy = updateSummaryStatistics(X, Y_true, tau=10)
+
+    plot_summary_statistics(Cxx,Cxy,Cyy)
+
+    # single supervised training
+    from mindaffectBCI.decoder.multipleCCA import multipleCCA
+    J, w, r = multipleCCA(Cxx, Cxy, Cyy, rcond=-.3, symetric=True) # 50% rank reduction
+    
+    plot_factoredmodel(w, r)
+
+    # apply to the data
+    from mindaffectBCI.decoder.scoreStimulus import scoreStimulus
+    Fe = scoreStimulus(X, w, r)
+    import matplotlib.pyplot as plt;
+    plt.clf()
+    plt.plot(np.einsum("Tsd,d->s",X,w.ravel()),'b',label="Xw")
+    plt.plot(Y_true.ravel(),'g',label="Y")
+    plt.plot(Fe.ravel()/np.max(Fe.ravel())/2,'r',label="Fe")
+    plt.legend()
+    from mindaffectBCI.decoder.scoreOutput import scoreOutput
+    print("Fe={}".format(Fe.shape))
+    print("Y={}".format(Y.shape))
+    Fy = scoreOutput(Fe, Y, r) # (nM,nTrl,nEp,nY)
+    print("Fy={}".format(Fy.shape))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     import matplotlib.pyplot as plt
 
+<<<<<<< HEAD
     times = np.arange(tau)
     if offset is not None: 
         times = times + offset
@@ -439,11 +505,88 @@ def filterbank_testcase():
     import matplotlib.pyplot as plt
     from mindaffectBCI.decoder.utils import testNoSignal, testSignal
     from mindaffectBCI.decoder.preprocess import fft_filterbank
+=======
+    from mindaffectBCI.decoder.decodingSupervised import decodingSupervised
+    decodingSupervised(Fy)
+    from mindaffectBCI.decoder.decodingCurveSupervised import decodingCurveSupervised, plot_decoding_curve
+    dc=decodingCurveSupervised(Fy)
+    plot_decoding_curve(*dc)
+
+
+
+def fit_predict(X, Y, tau=10, uss_args=dict(), mcca_args=dict()):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     from mindaffectBCI.decoder.scoreStimulus import scoreStimulus
     from mindaffectBCI.decoder.scoreOutput import scoreOutput
     from mindaffectBCI.decoder.decodingSupervised import decodingSupervised
     from mindaffectBCI.decoder.decodingCurveSupervised import decodingCurveSupervised, plot_decoding_curve
     from mindaffectBCI.decoder.updateSummaryStatistics import updateSummaryStatistics, plot_summary_statistics, plot_factoredmodel
+<<<<<<< HEAD
+=======
+    from mindaffectBCI.decoder.multipleCCA import multipleCCA
+    import matplotlib.pyplot as plt
+
+    # 1) Test without filterbank
+    Y_true = Y[:, :, 0:1, :] if Y.ndim > 3 else Y[np.newaxis, :, 0:1, :]  # (nTrl,nEp,1,nE)
+    uss_args['tau']=tau
+    Cxx, Cxy, Cyy = updateSummaryStatistics(X, Y_true, **uss_args)
+    plt.figure()
+    plot_summary_statistics(Cxx,Cxy,Cyy)
+
+    # single supervised training
+    J, w, r = multipleCCA(Cxx, Cxy, Cyy, **mcca_args) 
+    plt.figure()
+    plot_factoredmodel(w, r, ncol=3)
+    Fe = scoreStimulus(X, w, r)
+    Fy = scoreOutput(Fe, Y, r) # (nM,nTrl,nEp,nY)
+    dc=decodingCurveSupervised(Fy[0,...])
+
+    plt.subplot(1,3,3)
+    plot_decoding_curve(*dc)
+
+
+def filterbank_testcase():
+    import matplotlib.pyplot as plt
+    from mindaffectBCI.decoder.utils import testNoSignal, testSignal
+    from mindaffectBCI.decoder.preprocess import butter_filterbank
+    from mindaffectBCI.decoder.scoreStimulus import scoreStimulus
+    from mindaffectBCI.decoder.scoreOutput import scoreOutput
+    from mindaffectBCI.decoder.decodingSupervised import decodingSupervised
+    from mindaffectBCI.decoder.decodingCurveSupervised import decodingCurveSupervised, plot_decoding_curve
+    from mindaffectBCI.decoder.updateSummaryStatistics import updateSummaryStatistics, plot_summary_statistics, plot_factoredmodel
+    from mindaffectBCI.decoder.multipleCCA import multipleCCA
+
+    # get a dataset
+    if False:
+        X, Y, st = testNoSignal()
+        fs = 100
+    else:
+        X, Y, st, A, B = testSignal(tau=10, noise2signal=1, nTrl=100, nSamp=300)
+        fs = 100
+
+    # 1) Test without filter bank
+    fit_predict(X, Y)
+    plt.show(block=False)
+
+    # 2) Test with filterbank, 5-bands of 4hz
+    plt.figure(2)
+    Xf, _, _ = butter_filterbank(X, ((0,10,'bandpass'),(8,14,'bandpass'),(12,18,'bandpass'),(16,-1,'bandpass')), ftype='butter', fs=fs) #(tr,samp,band,ch)
+    fit_predict( Xf.reshape(Xf.shape[:-2]+(-1,)), Y)
+    plt.show(block=True)
+
+
+def testcase_matlab_summarystatistics():
+    from scipy.io import loadmat
+    import matplotlib.pyplot as plt
+    ss = loadmat('C:/Users/Developer/Desktop/utopia/matlab/buffer/SummaryStatistics.mat')
+    print(ss)
+    Cxx=ss['Cxx']
+    Cxy=np.moveaxis(ss['Cxy'],(0,1,2),(2,1,0)) # (d,tau,e)->(e,tau,d)
+    Cyy=np.moveaxis(ss['Cyy'],(0,1,2,3),(3,2,1,0)) # (e,tau,e,tau) -> (tau,e,tau,e)
+    from mindaffectBCI.decoder.updateSummaryStatistics import plot_summary_statistics, plot_erp, plot_factoredmodel
+    plot_summary_statistics(Cxx,Cxy,Cyy)
+    plt.show()
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     from mindaffectBCI.decoder.multipleCCA import multipleCCA
 
     # get a dataset

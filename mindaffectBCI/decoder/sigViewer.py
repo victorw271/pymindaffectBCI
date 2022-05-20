@@ -17,6 +17,7 @@
 # along with pymindaffectBCI.  If not, see <http://www.gnu.org/licenses/>
 
 import numpy as np
+<<<<<<< HEAD
 from math import log10
 from mindaffectBCI.decoder.UtopiaDataInterface import UtopiaDataInterface, butterfilt_and_downsample
 from numpy.lib.arraypad import _set_wrap_both
@@ -55,6 +56,21 @@ def run(ui: UtopiaDataInterface=None, host=None, timeout_ms:float=np.inf,
         ui=UtopiaDataInterface(U=U, data_preprocessor=data_preprocessor, send_signalquality=True)#, sample2timestamp='none')
         ui.connect(host)
         ui.sendMessage(Subscribe(None, "DEMSNQ"))
+=======
+from mindaffectBCI.decoder.UtopiaDataInterface import UtopiaDataInterface, stim2eventfilt, butterfilt_and_downsample
+   
+def run(ui: UtopiaDataInterface=None, host=None, timeout_ms:float=np.inf, 
+        center=True, timerange:int=5, nstimulus_lines:int=1, ndata_lines:int=-1, 
+        datastep:int=20, stimstep:int=1, stopband=((0,3),(25,-1)), out_fs=60, ch_names=None):
+    ''' simple sig-viewer using the ring-buffer for testing '''
+    import matplotlib.pyplot as plt
+
+    if ui is None:
+        data_preprocessor = butterfilt_and_downsample(order=6, stopband=stopband, fs_out=out_fs)#999)
+        #data_preprocessor = butterfilt_and_downsample(order=6, stopband='butter_stopband((0, 5), (25, -1))_fs200.pk', fs_out=60)
+        ui=UtopiaDataInterface(data_preprocessor=data_preprocessor, send_signalquality=False)#, sample2timestamp='none')
+        ui.connect(host)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     ui.update()
 
@@ -147,15 +163,27 @@ def run(ui: UtopiaDataInterface=None, host=None, timeout_ms:float=np.inf,
         fig.canvas.draw()
         fig.canvas.flush_events()
 
+<<<<<<< HEAD
+=======
+def sigViewer(*args, **kwargs):
+    run(*args, **kwargs)
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 def parse_args():
     import argparse
     import json
     parser = argparse.ArgumentParser()
     parser.add_argument('--host',type=str, help='address (IP) of the utopia-hub', default=None)
+<<<<<<< HEAD
     parser.add_argument('--out_fs',type=int, help='output sample rate', default=None)
     parser.add_argument('--filterband',type=json.loads, help='set of notch filters to apply to the data before analysis', default=((45,65),(5.5,25,'bandpass')))
     parser.add_argument('--ch_names', type=str, help='list of channel names, or capfile', default=None)
     parser.add_argument('--savefile',type=str, help='save file to play back throgh the viewer.  Use "askloadsavefile" to get a dialog to choose the save file.',default=None)
+=======
+    parser.add_argument('--out_fs',type=int, help='output sample rate', default=100)
+    parser.add_argument('--stopband',type=json.loads, help='set of notch filters to apply to the data before analysis', default=((45,65),(5.5,25,'bandpass')))
+    parser.add_argument('--ch_names', type=str, help='list of channel names, or capfile', default=None)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     args = parser.parse_args()
 
     if args.ch_names:
@@ -166,8 +194,11 @@ def parse_args():
 
 if __name__=='__main__':
     args = parse_args()
+<<<<<<< HEAD
     if 1: # quick launch for audio testing "dashboard"
         #setattr(args,'filterband', None)
         #setattr(args,'host', '192.168.253.100') # static IP of experimetn machine on Vonets R1
         setattr(args, 'nstimulus_lines', 4)
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     run(**vars(args))

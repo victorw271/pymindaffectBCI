@@ -9,7 +9,11 @@ ERP_STIM_DUR = 80/1000 # 80ms
 MI_STIM_DUR = 4 # 3s
 SSVEP_STIM_DUR = 4
 
+<<<<<<< HEAD
 def load_openBMI(datadir, sessdir=None, sessfn=None, fs_out=60, filterband=((45,65),(0,1),(25,-1)), CAR=False, verb=1, trlen_ms=None, offset_ms=(0,0), ppMI=True, ch_names=None):
+=======
+def load_openBMI(datadir, sessdir=None, sessfn=None, fs_out=60, stopband=((45,65),(0,1),(25,-1)), CAR=False, verb=1, trlen_ms=None, offset_ms=(0,0), ppMI=True, ch_names=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """Load and pre-process a openBMI <https://academic.oup.com/gigascience/article/8/5/giz002/5304369> offline save-file and return the EEG data, and stimulus information
 
     Args:
@@ -17,7 +21,11 @@ def load_openBMI(datadir, sessdir=None, sessfn=None, fs_out=60, filterband=((45,
         sessdir (str, optional): sub-directory for the session to load. Defaults to None.
         sessfn (str, optional): filename for the session information. Defaults to None.
         fs_out (float, optional): [description]. Defaults to 100.
+<<<<<<< HEAD
         filterband (tuple, optional): Specification for a (cascade of) temporal (IIR) filters, in the format used by `mindaffectBCI.decoder.utils.butter_sosfilt`. Defaults to ((45,65),(5.5,25,'bandpass')).
+=======
+        stopband (tuple, optional): Specification for a (cascade of) temporal (IIR) filters, in the format used by `mindaffectBCI.decoder.utils.butter_sosfilt`. Defaults to ((45,65),(5.5,25,'bandpass')).
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         trlen_ms (float, optional): Trial duration in milli-seconds.  If None then this is deduced from the stimulus information. Defaults to None.
         offset_ms (tuple, (2,) optional): Offset in milliseconds from the trial start/end for the returned data such that X has range [tr_start+offset_ms[0] -> tr_end+offset_ms[0]]. Defaults to (-500,500).
         ch_names (tuple, optional): Names for the channels of the EEG data.
@@ -234,11 +242,19 @@ def testcase():
         sessfn = sys.argv[1]
 
     from load_openBMI import load_openBMI
+<<<<<<< HEAD
     X, Y, coords = load_openBMI(sessfn, CAR=True, offset_ms=(-400,1000), sessfn=sessfn, fs_out=60, filterband=((0,1),(30,-1)))
     fs = coords[1]['fs']
     # CAR=False,fs_out=60,filterband=((0,3),(29,-1)),rcond=1e-3 : audc=36 Perr[-1]=.30
     # CAR=True,fs_out=60,filterband=((0,3),(29,-1)),rcond=1e-3 : audc=36 Perr[-1]=.30
     # CAR=True,fs_out=60,filterband=((0,3),(29,-1)),rcond=1e-8 : audc=36 Perr[-1]=.30
+=======
+    X, Y, coords = load_openBMI(sessfn, CAR=True, offset_ms=(-400,1000), sessfn=sessfn, fs_out=60, stopband=((0,1),(30,-1)))
+    fs = coords[1]['fs']
+    # CAR=False,fs_out=60,stopband=((0,3),(29,-1)),rcond=1e-3 : audc=36 Perr[-1]=.30
+    # CAR=True,fs_out=60,stopband=((0,3),(29,-1)),rcond=1e-3 : audc=36 Perr[-1]=.30
+    # CAR=True,fs_out=60,stopband=((0,3),(29,-1)),rcond=1e-8 : audc=36 Perr[-1]=.30
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     
     if 'SSVEP' in sessfn:

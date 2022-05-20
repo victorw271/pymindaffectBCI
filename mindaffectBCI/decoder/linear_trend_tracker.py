@@ -1,5 +1,9 @@
 #  Copyright (c) 2019 MindAffect B.V. 
+<<<<<<< HEAD
 #  Author: Jason Farquhar <jadref@gmail.com>
+=======
+#  Author: Jason Farquhar <jason@mindaffect.nl>
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -14,7 +18,10 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pymindaffectBCI.  If not, see <http://www.gnu.org/licenses/>
+<<<<<<< HEAD
 import numpy as np
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 class linear_trend_tracker():
     """ linear trend tracker with adaptive forgetting factor

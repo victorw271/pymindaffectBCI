@@ -3,7 +3,11 @@ import numpy as np
 from scipy.io import loadmat
 from mindaffectBCI.decoder.utils import butter_sosfilt
 
+<<<<<<< HEAD
 def load_brainstream(datadir, sessdir=None, sessfn=None, fs_out=None, ifs=None, fr=None, filterband=None, verb=0, ch_names=None, offset_ms=None):
+=======
+def load_brainstream(datadir, sessdir=None, sessfn=None, fs_out=60, ifs=None, fr=None, stopband=((45,65),(5,25,'bandpass')), verb=0, ch_names=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """Load and pre-process a brainstream offline save-file and return the EEG data, and stimulus information
 
     Args:
@@ -13,7 +17,11 @@ def load_brainstream(datadir, sessdir=None, sessfn=None, fs_out=None, ifs=None, 
         fs_out (float, optional): [description]. Defaults to 100.
         ifs (float, optional): the input data sample rate.
         fr (float, optional): the input stimulus frame rate.
+<<<<<<< HEAD
         filterband (tuple, optional): Specification for a (cascade of) temporal (IIR) filters, in the format used by `mindaffectBCI.decoder.utils.butter_sosfilt`. Defaults to ((45,65),(5.5,25,'bandpass')).
+=======
+        stopband (tuple, optional): Specification for a (cascade of) temporal (IIR) filters, in the format used by `mindaffectBCI.decoder.utils.butter_sosfilt`. Defaults to ((45,65),(5.5,25,'bandpass')).
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         ch_names (tuple, optional): Names for the channels of the EEG data.
 
     Returns:
@@ -22,9 +30,12 @@ def load_brainstream(datadir, sessdir=None, sessfn=None, fs_out=None, ifs=None, 
         coords (list-of-dicts (3,)): dictionary with meta-info for each dimension of X & Y.  As a minimum this contains
                           "name"- name of the dimension, "unit" - the unit of measurment, "coords" - the 'value' of each element along this dimension
     """    
+<<<<<<< HEAD
 
     if offset_ms is not None:
         print("Warning: offset ignored for brain-steam data")
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     # load the data file
     Xfn = datadir
@@ -124,8 +135,13 @@ def load_brainstream(datadir, sessdir=None, sessfn=None, fs_out=None, ifs=None, 
     #X = X - X[...,0:1,:]
     if filterband is not None:
         if verb > 0:
+<<<<<<< HEAD
             print("preFilter: {}Hz".format(filterband))
         X, _, _ = butter_sosfilt(X, filterband, fs)
+=======
+            print("preFilter: {}Hz".format(stopband))
+        X, _, _ = butter_sosfilt(X, stopband, fs)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     
     # preprocess -> downsample
     resamprate = round(2*fs/fs_out)/2 # round to nearest .5
@@ -168,8 +184,13 @@ def testcase():
     if len(sys.argv) > 3:
         fn = sys.argv[3]
 
+<<<<<<< HEAD
     from mindaffectBCI.decoder.offline.load_brainstream import load_brainstream
     X, Y, coords = load_brainstream(datadir, sessdir, sessfn, fs_out=60, filterband=((0,5.5),(24,-1)))
+=======
+    from load_brainstream import load_brainstream
+    X, Y, coords = load_brainstream(datadir, sessdir, sessfn, fs_out=60, stopband=((0,5.5),(24,-1)))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     fs = coords[1]['fs']
     ch_names = coords[2]['coords']
     

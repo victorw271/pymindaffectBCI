@@ -141,10 +141,16 @@ class UtopiaController:
 
     def isConnected(self):  return self.client.isConnected
     def gethostport(self):  return self.client.gethostport()
+<<<<<<< HEAD
     def gethost(self): return self.client.gethost()
 
     def sendStimulusEvent(self, stimulusState, timestamp=None,
                           targetState=None, objIDs=None, injectSignal:float=None):
+=======
+                
+    def sendStimulusEvent(self, stimulusState, timestamp=None, 
+                          targetState=None, objIDs=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """
         Send a message to the Utopia-HUB informing of the current stimulus state
 
@@ -153,11 +159,19 @@ class UtopiaController:
             timestamp ([type], optional): [description]. Defaults to None.
             targetState ([type], optional): [description]. Defaults to None.
             objIDs ([type], optional): [description]. Defaults to None.
+<<<<<<< HEAD
             injectSignal (int|callable,optional): inject a signal with this amplitude to fake data, should be 0-255 integer. 
                      If None then use the target state information. If callable, then injectSignal(targetState|stimulusState) to return the state to inject. Defautls to None.
         Returns:
             [type]: [description]
         """
+=======
+
+        Returns:
+            [type]: [description]
+        """                          
+        
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         stimEvent = self.mkStimulusEvent(stimulusState, timestamp, targetState, objIDs)
         if self.isConnected(): self.client.sendMessage(stimEvent)
         # erp injection for debugging with fakedata
@@ -183,10 +197,17 @@ class UtopiaController:
         make a valid stimulus event for the given stimulus state
 
         Args:
+<<<<<<< HEAD
             stimulusState (list-of-int): the stimulus state of each object in objIDs
             timestamp (int, optional): timestamp for this stimulus change in milliseconds. Defaults to None.
             targetState ([type], optional): state of the current cued target. Defaults to None.
             objIDs (list-of-int, optional): the object Identifiers for the objects in stimulus state. Defaults to None.
+=======
+            stimulusState ([type]): [description]
+            timestamp ([type], optional): [description]. Defaults to None.
+            targetState ([type], optional): [description]. Defaults to None.
+            objIDs ([type], optional): [description]. Defaults to None.
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
         Raises:
             ValueError: [description]
@@ -194,7 +215,11 @@ class UtopiaController:
         Returns:
             [type]: [description]
         """                        
+<<<<<<< HEAD
         if not hasattr(stimulusState,'__iter__'): stimulusState=[stimulusState]
+=======
+        
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         if timestamp is None:
             timestamp = self.getTimeStamp()
         if objIDs is None:
@@ -217,7 +242,11 @@ class UtopiaController:
         Args:
             newmode ([type]): [description]
         """        
+<<<<<<< HEAD
         if self.isConnected():
+=======
+        if self.client:
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             self.client.sendMessage(
                 ModeChange(self.getTimeStamp(), newmode))
 
@@ -264,13 +293,21 @@ class UtopiaController:
         Args:
             msg ([type]): [description]
         """        
+<<<<<<< HEAD
         if self.isConnected():
+=======
+        if self.client:
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             self.client.sendMessage(Log(self.getTimeStamp(), msg))
 
     def newTarget(self):
         """[summary]
         """        
+<<<<<<< HEAD
         if self.isConnected():
+=======
+        if self.client:
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             self.client.sendMessage(NewTarget(self.getTimeStamp()))
         for h in self.newTargetHandlers:
             h()         # do selection callbacks
@@ -281,7 +318,11 @@ class UtopiaController:
         Args:
             objID ([type]): [description]
         """        
+<<<<<<< HEAD
         if self.isConnected():
+=======
+        if self.client:
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             self.client.sendMessage(Selection(self.getTimeStamp(), objID))
         for h in self.selectionHandlers:
             h(objID)         # do selection callbacks
@@ -297,7 +338,11 @@ class UtopiaController:
             [type]: [description]
         """        
         
+<<<<<<< HEAD
         if not self.isConnected(): return None
+=======
+        if not self.client: return None
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         # get any messages with predictions
         self.msgs = self.client.getNewMessages(timeout_ms) if self.client else []
         # process these messages as needed & call-callbacks
@@ -391,7 +436,11 @@ def injectERP(amp, host="localhost", port=8300):
     Inject an erp into a simulated data-stream, sliently ignore if failed, e.g. because not simulated
 
     Args:
+<<<<<<< HEAD
         amp (int|float): amplitude of the injected signal, in the range 0-256
+=======
+        amp ([type]): [description]
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         host (str, optional): [description]. Defaults to "localhost".
         port (int, optional): [description]. Defaults to 8300.
     """    

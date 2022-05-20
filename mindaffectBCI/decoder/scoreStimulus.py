@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 #  Copyright (c) 2019 MindAffect B.V.
+=======
+#  Copyright (c) 2019 MindAffect B.V. 
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 #  Author: Jason Farquhar <jason@mindaffect.nl>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
@@ -20,7 +24,11 @@ from mindaffectBCI.decoder.utils import window_axis
 
 
 #@function
+<<<<<<< HEAD
 def scoreStimulus(X, W, R=None, b=None, offset=0, f=None, isepoched=False):
+=======
+def scoreStimulus(X, W, R=None, b=None, offset=0, f=None, isepoched=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     '''
     Apply spatio-temporal (possibly factored) model to data 
 
@@ -81,10 +89,17 @@ def scoreStimulusEpoch_factored(X, W, R, b=None):
       Fe= (nM x nTrl x nEpoch x nE) similarity score for each input epoch for each output
     '''
 
+<<<<<<< HEAD
     # ensure all inputs have the right  shape, by addig leading singlenton dims
     X = X.reshape((1, ) * (4 - X.ndim) + X.shape)  # (nTrl,nEp,tau,d)
     W = W.reshape(((1, ) * (3 - W.ndim)) + W.shape)  # (nM,nfilt,d)
     R = R.reshape(((1, ) * (4 - R.ndim)) + R.shape)  # (nM,nfile,nE,tau)
+=======
+    # ensure all inputs have the  right  shape, by addig leading singlenton dims
+    X = X.reshape((1,)*(4-X.ndim)+X.shape) # (nTrl,nEp,tau,d)
+    W = W.reshape(((1,)*(3-W.ndim))+W.shape) # (nM,nfilt,d)
+    R = R.reshape(((1,)*(4-R.ndim))+R.shape) # (nM,nfile,nE,tau)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     # apply the factored model
     # N.B. einsum seems to mess the ram up, so do it ourselves...
@@ -107,8 +122,13 @@ def scoreStimulusEpoch_full(X_TStd, W_Metd, b=None):
     '''
 
     # ensure inputs have the  right  shape
+<<<<<<< HEAD
     X_TStd = X_TStd.reshape((1, ) * (4 - X_TStd.ndim) + X_TStd.shape)
     W_Metd = W_Metd.reshape((1, ) * (4 - W_Metd.ndim) + W_Metd.shape)
+=======
+    X = X.reshape((1,)*(4-X.ndim)+X.shape)
+    W = W.reshape((1,)*(4-W.ndim)+W.shape)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     # apply the model
     Fe_MTSe = np.einsum("TStd, Metd->MTSe", X_TStd, W_Metd, optimize='optimal')
@@ -123,12 +143,51 @@ def factored2full(W, R):
     Output:
        W (nM,e,tau,d) spatio-temporal filter (BWD model) '''
     if R is not None:
+<<<<<<< HEAD
         W = W.reshape(((1, ) * (3 - W.ndim)) + W.shape)
         R = R.reshape(((1, ) * (4 - R.ndim)) + R.shape)
+=======
+        W = W.reshape(((1,)*(3-W.ndim))+W.shape)
+        R = R.reshape(((1,)*(4-R.ndim))+R.shape)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         # get to single spatio-temporal filter
         W = np.einsum("mfd, mfet->metd", W, R)
     return W
 
+<<<<<<< HEAD
+=======
+def scoreStimulusCont(X, W, R=None, b=None, offset=0):
+    """ Apply spatio-tempoal (possibly factored) model to raw (non epoched) data
+
+    Args:
+        X (np.ndarray (nTr,nSamp,d)): raw per-trial data 
+        W (np.ndarray (nM,nfilt,d)): spatial filters for each factor 
+        R (np.ndarray (nM,nfilt,nE,tau): responses for each stimulus event for each output
+        b (np.ndarray (nE,1)): offset for each stimulus type
+    Returns:
+        np.ndarray (nM,nTrl,nSamp,nE): similarity score for each input epoch for each output
+    """   
+    tau = W.shape[-2] if R is None else R.shape[-1] # get response length
+    if X.shape[-2] < tau: # X isn't big enough to apply... => zero score
+        Fe = np.zeros((W.shape[0],X.shape[0],1,W.shape[1]),dtype=X.dtype)
+    
+    # slice and apply
+    Xe = window_axis(X, winsz=tau, axis=-2) # (nTrl, nSamp-tau, tau, d)
+    Fe = scoreStimulusEpoch(Xe, W, R, b) # (nM, nTrl, nSamp-tau, nE)
+
+    # shift for the offset and zero-pad to the input X size
+    # N.B. as we are offsetting from X->Y we move in the **OPPOSITTE** direction to
+    # how Y is shifted! 
+    Feoffset=-offset
+    if Feoffset<=0:
+        tmp = Fe[..., -Feoffset:, :] # shift-back and shrink
+        Fe = np.zeros(Fe.shape[:-2]+(X.shape[-2],)+Fe.shape[-1:],dtype=Fe.dtype)
+        Fe[...,:tmp.shape[-2],:] = tmp # insert
+    else :
+        tmp =  Fe[..., :X.shape[-2]-Feoffset, :] # shrink
+        Fe = np.zeros(Fe.shape[:-2]+(X.shape[-2],)+Fe.shape[-1:],dtype=Fe.dtype)
+        Fe[...,Feoffset:Feoffset+tmp.shape[-2],:] = tmp # shift + insert
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 def scoreStimulusCont(X_TSd, W, R=None, b=None, offset=0):
     """ Apply spatio-tempoal (possibly factored) model to raw (non epoched) data

@@ -6,7 +6,11 @@ from mindaffectBCI.decoder.utils import block_randomize, butter_sosfilt, upsampl
 from mindaffectBCI.decoder.multipleCCA import robust_whitener
 from mindaffectBCI.decoder.updateSummaryStatistics import updateCxx
 
+<<<<<<< HEAD
 def load_mark_EMG(datadir, sessdir=None, sessfn=None, fs_out=60, filterband=((45,65),(0,10),(45,55),(95,105),(145,-1)), filterbank=None, verb=0, log=True, whiten=True, plot=False):
+=======
+def load_mark_EMG(datadir, sessdir=None, sessfn=None, fs_out=60, stopband=((45,65),(0,10),(45,55),(95,105),(145,-1)), filterbank=None, verb=0, log=True, whiten=True, plot=False):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     fs=1000
     ch_names=None
@@ -107,7 +111,11 @@ def testcase():
         sessfn = sys.argv[1]
  
     #from offline.load_mark_EMG import load_mark_EMG
+<<<<<<< HEAD
     oX, oY, coords = load_mark_EMG(sessfn, fs_out=125, filterband=((0,10),(45,55),(95,105),(145,-1)), plot=False)
+=======
+    oX, oY, coords = load_mark_EMG(sessfn, fs_out=125, stopband=((0,10),(45,55),(95,105),(145,-1)), plot=False)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     fs = coords[1]['fs']
     ch_names = coords[2]['coords']
     X=oX.copy()

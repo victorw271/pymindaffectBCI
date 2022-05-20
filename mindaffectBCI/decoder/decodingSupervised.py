@@ -25,7 +25,11 @@ def decodingSupervised(Fy, softmaxscale=3.5, marginalizemodels=True,
                        marginalizedecis=False,
                        prior=None,
                        nocontrolamplitude=None,
+<<<<<<< HEAD
                        tiebreaking_noise=1e-3, nvirt_out=None, **kwargs):
+=======
+                       tiebreaking_noise=1e-3, **kwargs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
   """    true-target estimator and error-probility estimator for each trial
 
    Args:
@@ -64,6 +68,7 @@ def decodingSupervised(Fy, softmaxscale=3.5, marginalizemodels=True,
   if Fy is None:
       return -1, 1, None, None, None
   
+<<<<<<< HEAD
   if nvirt_out is not None and not nvirt_out == 0:
     # generate virtual outputs for testing -- not from the 'true' target though
     virt_Fy = block_permute(Fy[...,1:], nvirt_out, axis=-1, perm_axis=-2)
@@ -101,6 +106,38 @@ def decodingSupervised(Fy, softmaxscale=3.5, marginalizemodels=True,
       Ptgt2d = Ptgt2d + (np.random.standard_normal(Ptgt2d.shape)*tiebreaking_noise).astype(Ptgt.dtype)
       Ptgt2d = np.maximum(0,np.minimum(1,Ptgt2d,dtype=Ptgt.dtype),dtype=Ptgt.dtype)
 
+=======
+  #print("decodingSup args={}".format(kwargs))
+
+  # get the info on which outputs are zero in each trial
+  validTgt = np.any(Fy != 0, axis=-2) # valid if non-zero for any epoch..# (nModel,nTrl,nY)  
+  # normalize the raw scores for each model to have nice distribution
+  ssFy,varsFy,decisIdx,nEp,nY=normalizeOutputScores(Fy, validTgt=validTgt, **kwargs)
+
+  if nocontrolamplitude is not None:
+    raise NotImplementedError('no-control signal not yet implemented correctly')
+    # # add a no-control pseudo-output to simulate not looking
+    # #Median rather than mean?
+    # mussFy=np.sum(ssFy,0)/np.maximum(2,np.sum(validTgt,0,keepdims=True)) # mean score for each trial/decisPt [ 1 x nDecis x nTrl x nMdl ]
+    # # add to the scores & validTgt info
+    # ssFy=np.concatenate((ssFy,nocontrolamplitude+mussFy),0)
+    # validtgtTrl=np.concatenate((validtgtTrl,np.ones([1,size(validtgtTrl,2),size(validtgtTrl,3),size(validtgtTrl,4)])))
+
+  # compute the target probabilities over output for each model+trial
+  # use the softmax approach to get Ptgt for all outputs
+  Ptgt = zscore2Ptgt_softmax(ssFy,
+                              softmaxscale,
+                              validTgt=validTgt,
+                              marginalizemodels=marginalizemodels,
+                              marginalizedecis=marginalizedecis,
+                              prior=prior) # (nM,nTrl,nDecis,nY)
+  # extract the predicted output and it's probability of being the target
+  Ptgt2d = Ptgt.reshape((np.prod(Ptgt.shape[:-1]), Ptgt.shape[-1])) # make 2d-copy
+  # add tie-breaking noise
+  if tiebreaking_noise > 0:
+      Ptgt2d = Ptgt2d + np.random.standard_normal(Ptgt2d.shape)*tiebreaking_noise
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
   Yestidx = np.argmax(Ptgt2d, -1) # max over outputs, i.e. models, decisPts, etc..
   Ptgt_max = Ptgt2d[np.arange(Ptgt2d.shape[0]), Yestidx] # value at max, indexing trick to find..
   Yestidx = Yestidx.reshape(Ptgt.shape[:-1]) # -> (nM,nTrl,nY)
@@ -110,6 +147,7 @@ def decodingSupervised(Fy, softmaxscale=3.5, marginalizemodels=True,
   decisMdl = Yestidx if ssFy.ndim>3 else 1
   decisEp = 1   
   Yest = Yestidx
+<<<<<<< HEAD
 
   # remove the virtual outputs and replace the idx with -1
   if nvirt_out is not None and not nvirt_out == 0:
@@ -117,6 +155,8 @@ def decodingSupervised(Fy, softmaxscale=3.5, marginalizemodels=True,
     Ptgt = Ptgt[...,:-nvirt_out]
     Yest[Yest>=nreal_out] = -1
 
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
   # p(maxz != tgt ) = 1 - p(maxz==tgt)
   Perr = 1 - Ptgt_max
   return Yest, Perr, Ptgt, decisMdl, decisEp

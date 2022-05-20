@@ -23,7 +23,10 @@
 #import mindaffectBCI
 import time
 import random
+<<<<<<< HEAD
 from mindaffectBCI.decoder.utils import search_directories_for_file, import_and_make_class
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 from mindaffectBCI.stimseq import StimSeq
 from mindaffectBCI.utopiaController import UtopiaController, TimeStampClock
 import os
@@ -51,6 +54,7 @@ class FSM:
                 target_idx (int): the index into stimState of the cued target, or -1 if no target set
                 objIDs (list-int): the objectIDs for each of the outputs
                 sendEvent (bool): flag if we should send stimulus events in this state
+<<<<<<< HEAD
         """
         return (None, -1, None, False)  # BODGE: stimState,tgtState,objIDs,sendEvent
 
@@ -66,6 +70,21 @@ class GSM(FSM):
         self.stack = []
 
     def push(self, s):
+=======
+        """        
+        return (None,-1,None,False)# BODGE: stimState,tgtState,objIDs,sendEvent
+
+class GSM(FSM):
+    '''Generalized state machine with stack of states'''
+    def __init__(self): self.stack=[]
+
+    def clear(self):    
+        """clear the state machine stack
+        """        
+        self.stack=[]
+
+    def push(self,s):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """add a new state machine to the stack
 
         Args:
@@ -73,19 +92,33 @@ class GSM(FSM):
 
         Returns:
             list: current state machine stack 
+<<<<<<< HEAD
         """
         self.stack.append(s)
         return self.stack
 
     def pop(self):
+=======
+        """           
+        self.stack.append(s); return self.stack
+
+    def pop(self):      
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """remove and return the currently active state machine
 
         Returns:
             GSM: the current state machine at the stop of the stack
+<<<<<<< HEAD
         """
         return self.stack.pop()
 
     def next(self, t):
+=======
+        """        
+        return self.stack.pop()
+
+    def next(self,t):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """get the next stimulus state to shown
 
         Args:
@@ -94,8 +127,13 @@ class GSM(FSM):
         Raises:
             StopIteration: when this state machine has run out of states
         """
+<<<<<<< HEAD
         while self.stack:
             try:
+=======
+        while self.stack :
+            try : 
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
                 self.stack[-1].next(t)
                 return
             except StopIteration:
@@ -110,8 +148,13 @@ class GSM(FSM):
 
         Returns:
             StimulusState: the current stimulus state tuple (stimState,target_idx,objIDs,sendEvent)
+<<<<<<< HEAD
         """
         if self.stack:
+=======
+        """        
+        if self.stack :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             return self.stack[-1].get()
         else:
             return None
@@ -119,18 +162,30 @@ class GSM(FSM):
 
 class WaitFor(FSM):
     ''' state machine which waits for given number of frames to pass'''
+<<<<<<< HEAD
 
     def __init__(self, numframes):
+=======
+    def __init__(self,numframes):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """state machine which waits for given number of frames to pass
 
         Args:
             numframes (int): the number of frames to wait for
+<<<<<<< HEAD
         """
         self.numframes = numframes
         self.nframe = 0
         print("waitFor: %g" % (self.numframes))
 
     def next(self, t):
+=======
+        """        
+        self.numframes=numframes
+        self.nframe=0
+        print("waitFor: %g"%(self.numframes))
+    def next(self,t):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """stop after the desired number of frames has passed
 
         Args:
@@ -138,9 +193,15 @@ class WaitFor(FSM):
 
         Raises:
             StopIteration: when desired number frames expired
+<<<<<<< HEAD
         """
         self.nframe = self.nframe+1
         if self.nframe > self.numframes:
+=======
+        """        
+        self.nframe=self.nframe+1
+        if self.nframe>self.numframes :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             raise StopIteration()
 
     def get(self):
@@ -149,6 +210,7 @@ class WaitFor(FSM):
 
 class Flicker(FSM):
     ''' do a normal flicker sequence'''
+<<<<<<< HEAD
 
     # class variable to store frame counter information across calls
     lastframe: int = 0
@@ -160,6 +222,14 @@ class Flicker(FSM):
                  framesperbit: int = 1,
                  permute: bool = False,
                  startframe: int = 0):
+=======
+    def __init__(self,stimSeq=None,
+                 numframes:int=4*isi, 
+                 tgtidx:int=-1,
+                 sendEvents:bool=True, 
+                 framesperbit:int=1,
+                 permute:bool=False): 
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """Object to provide state information for a flicker sequence
 
         Args:
@@ -169,6 +239,7 @@ class Flicker(FSM):
             sendEvents (bool, optional): should we send stimulus events.  Defaults to True
             framesperbit (int, optional): number of video-frames, i.e. calls to next, per stimsequence bit.  Defaults to 1.
             permute (bool, optional): flag, should we permute the codebook to output mapping.  Defaults to False.
+<<<<<<< HEAD
             startframe (int, optional): starting frame number in the stimulus sequence.  If set to 'random' then choose a random starting point.  If set to 'lastframe' continue from the last frame for which 'sendEvents' was true. Defaults to 0.
         """
         self.stimSeq, self.numframes, self.tgtidx, self.sendEvents, self.permute = (
@@ -183,6 +254,17 @@ class Flicker(FSM):
             self.startframe = startframe
         self.nframe = 0
         self.framesperbit = framesperbit if framesperbit is not None else 1
+=======
+        """    
+        self.stimSeq=stimSeq
+        self.numframes=numframes
+        self.nframe=0
+        self.tgtidx=tgtidx
+        #self.tgtstate=-1
+        self.sendEvents=sendEvents
+        self.framesperbit=framesperbit if framesperbit is not None else 1
+        self.permute = permute 
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         if self.permute == True:
             self.update_codebook_permutation()
 
@@ -191,6 +273,7 @@ class Flicker(FSM):
         # print("stimSeq:")
         # for i in range(len(self.objIDs)):
         #    print(["objID %d = %s"%(i,"".join([ '*' if self.stimSeq[t][i]==1 else '.' for t in range(len(self.stimSeq))]))])
+<<<<<<< HEAD
         print('flicker: %d frames, tgt %d' % (self.numframes, tgtidx if tgtidx >= 0 else -1))
 
     def update_codebook_permutation(self):
@@ -214,10 +297,33 @@ class Flicker(FSM):
             # record the current frame number for continuation later (if wanted)
             if self.sendEvents:
                 Flicker.lastframe = self.startframe + self.nframe
+=======
+        print('flicker: %d frames, tgt %d'%(self.numframes,tgtidx if tgtidx >=0 else -1))
+    def update_codebook_permutation(self):
+        """update the permutation randomly mapping between codebook rows and outputs
+        """
+        self.codebook_permutation = list(range(len(self.stimSeq[0]))) # linear index
+        random.shuffle(self.codebook_permutation) # N.B. in-place permutation
+
+        
+    def next(self,t):
+        """move to the next state
+        """
+
+        self.nframe=self.nframe+1
+        # do wrap-around specific processing
+        if len(self.stimSeq)>1 and self.nframe//self.framesperbit % len(self.stimSeq) == 0:
+            if self.permute:
+                print("Update Permutation: {} {}".format(self.nframe, len(self.stimSeq)))
+                self.update_codebook_permutation()
+        if self.nframe>self.numframes:
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             raise StopIteration()
+
 
     def update_ss(self):
         """update the information about the current stimulus state
+<<<<<<< HEAD
         """
         # extract the current frames stimulus state, loop if past end
         if self.nframe >= self.numframes:
@@ -232,32 +338,63 @@ class Flicker(FSM):
         if self.permute:  # permute the codebook -> objID mapping if wanted
             self.ss = [self.ss[p] for p in self.codebook_permutation]
 
+=======
+        """        
+        # extract the current frames stimulus state, loop if past end
+        if self.nframe >= self.numframes:
+            # final frame is blank screen
+            self.ss[:] = [0 for i in range(len(self.stimSeq[0]))]
+            self.tgtState = -1
+        else:            
+            self.ss       = self.stimSeq[self.nframe//self.framesperbit % len(self.stimSeq)]
+            if self.permute: # permute the codebook -> objID mapping if wanted
+                self.ss = [self.ss[p] for p in self.codebook_permutation]
+        
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     def get(self):
         """ return the curent stimulus state info
 
         Returns:
             StimulusState: the current stimlus state tuple (stimState, target_idx, objIDs, sendEvent)
+<<<<<<< HEAD
         """
 
         self.update_ss()
+=======
+        """        
+        
+        self.update_ss()        
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         # default to the stored set active objIDs
         #if objIDs is None : objIDs=self.objIDs
         # get the state info for the given set of objectIDs
         #ss =[self.ss[i] for i in objIDs-1]
+<<<<<<< HEAD
         return (self.ss, self.tgtidx, None, self.sendEvents)
 
+=======
+        return (self.ss,self.tgtidx,None,self.sendEvents)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 class FlickerWithSelection(Flicker):
     """ do a normal flicker sequence, with early stopping selection
+<<<<<<< HEAD
     """
 
+=======
+    """    
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     def __init__(self,
                  stimSeq=None,
                  numframes=4*isi,
                  tgtidx=-1,
                  utopiaController=None,
                  framesperbit=1,
+<<<<<<< HEAD
                  sendEvents=True, permute=False, startframe: int = 0):
+=======
+                 sendEvents=True, permute=False):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """Object to provide state information for a flicker sequence, with early-stopping on selection
 
         Args:
@@ -268,11 +405,19 @@ class FlickerWithSelection(Flicker):
             framesperbit (int, optional): number of video frames per codebook bit. Defaults to 1.
             sendEvents (bool, optional): do we send stimulus events for this sequence. Defaults to True.
             permute (bool, optional): flag, should we permute the codebook to output mapping.  Defaults to False.
+<<<<<<< HEAD
             startframe (int, optional): frame number to start stim-sequence at. Defaults to 0.
         Raises:
             ValueError: if invalid utopia controller
         """
         super().__init__(stimSeq, numframes, tgtidx, sendEvents, framesperbit, permute, startframe)
+=======
+
+        Raises:
+            ValueError: if invalid utopia controller
+        """    
+        super().__init__(stimSeq,numframes,tgtidx,sendEvents,framesperbit,permute)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         self.utopiaController = utopiaController
         if self.utopiaController is None:
             raise ValueError("must have utopiaController")
@@ -280,8 +425,13 @@ class FlickerWithSelection(Flicker):
         self.utopiaController.getNewMessages()  # ensure all old predictions processed
         self.utopiaController.clearLastPrediction()  # reset to no waiting predictions
         print(' with selection')
+<<<<<<< HEAD
 
     def next(self, t):
+=======
+        
+    def next(self,t):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """get the next stimulus state in the sequence -- terminate if out of time, or BCI made a selection
 
         Args:
@@ -289,7 +439,11 @@ class FlickerWithSelection(Flicker):
 
         Raises:
             StopIteration: stop if numframes exceeded or BCI made a selection
+<<<<<<< HEAD
         """
+=======
+        """      
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         super().next(t)
         # check for selection and stop if found
         objId, selected = self.utopiaController.getLastSelection()
@@ -299,8 +453,12 @@ class FlickerWithSelection(Flicker):
                 self.utopiaController.selection(objId)
             raise StopIteration()
 
+<<<<<<< HEAD
 
 def mkBlinkingSequence(numframes, tgtidx, tgtState=1):
+=======
+def mkBlinkingSequence(numframes,tgtidx,tgtState=1):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """make a simple on-off blinking sequence
 
     Args:
@@ -310,20 +468,34 @@ def mkBlinkingSequence(numframes, tgtidx, tgtState=1):
 
     Returns:
         list-of-lists: (numframes,255) stimulus state for each output at each timepoint
+<<<<<<< HEAD
     """
 
     blinkSeq = [[0 for i in range(MAXOBJID)] for i in range(numframes)]
     for i in range(int(numframes/2)):
         blinkSeq[i][tgtidx] = tgtState  # tgt on
+=======
+    """   
+
+    blinkSeq=[[0 for i in range(MAXOBJID)] for i in range(numframes)]
+    for i in range(int(numframes/2)) : blinkSeq[i][tgtidx]=tgtState # tgt on
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     return blinkSeq
 
 
 class HighlightObject(Flicker):
     """'Highlight a single object for a number of frames
+<<<<<<< HEAD
     """
 
     def __init__(self, numframes=isi*2, tgtidx=-1, tgtState=254,
                  sendEvents=False, numblinkframes=int(.5/isi)):
+=======
+    """    
+    
+    def __init__(self,numframes=isi*2,tgtidx=-1,tgtState=2,
+                 sendEvents=False,numblinkframes=int(.5/isi)):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """Highlight a single object for a number of frames
 
         Args:
@@ -338,6 +510,7 @@ class HighlightObject(Flicker):
             stimSeq = mkBlinkingSequence(int(numblinkframes), tgtidx, tgtState)
         else:
             stimSeq = [[0]*MAXOBJID]
+<<<<<<< HEAD
             if tgtidx >= 0:
                 stimSeq[0][tgtidx] = tgtState
         super().__init__(stimSeq, numframes, tgtidx, sendEvents=sendEvents, permute=False)
@@ -354,13 +527,34 @@ class SingleTrial(FSM):
                  waitduration: float = 1, intertrialduration: float = 1, cueframes: int = None, feedbackframes: int = None,
                  waitframes: int = None, intertrialframes: int = None, permute: bool = False, startframe: int = 0,
                  sendEvents: bool = True):
+=======
+            if tgtidx>=0:
+                stimSeq[0][tgtidx]=tgtState
+        super().__init__(stimSeq,numframes,tgtidx,sendEvents=sendEvents,permute=False)
+        print('highlight: tgtidx=%d nframes=%d'%(tgtidx if tgtidx>=0 else -1,numframes))
+
+class SingleTrial(FSM):
+    """do a complete single trial with: cue->wait->flicker->feedback
+    """    
+
+    def __init__(self,stimSeq,tgtidx:int,
+                 utopiaController,stimulusStateStack,
+                 numframes:int=None,framesperbit:int=1,
+                 selectionThreshold:float=None,
+                 duration:float=4,cueduration:float=1,feedbackduration:float=1,waitduration:float=1,
+                 cueframes:int=None,feedbackframes:int=None,waitframes:int=None,permute:bool=False):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """do a complete single trial with: cue->wait->flicker->feedback
 
         Args:
             stimSeq (list-of-lists): (time,outputs)  the stimulus Sequence matrix to play
             tgtidx (int): the index in stimSeq of the cued target output.
             utopiaController (UtopiaController): the utopia controller for interaction with the decoder
+<<<<<<< HEAD
             stimulusStateMachineStack (GSM): the stimulus state stack to which we add state machines
+=======
+            stimulusStateStack (GSM): the stimulus state stack to which we add state machines
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             numframes (int, optional): the number of frames to flicker for. Defaults to None.
             framesperbit (int, optional): the number of video frames per stimSeq time-points. Defaults to 1.
             selectionThreshold (float, optional): Target error probability for selection. Defaults to None.
@@ -371,6 +565,7 @@ class SingleTrial(FSM):
             cueframes (int, optional): cue duration in frames. Defaults to None.
             feedbackframes (int, optional): feedback duration in frames. Defaults to None.
             waitframes (int, optional): wait duration in frames. Defaults to None.
+<<<<<<< HEAD
             permute (bool, optional): if true then permute the order of objects before running the flicker sequence.  Default to False
             startframe (int, optional): set the frame in the sequence to start the flicker from.  if 'random' then pick a random starting point. If 'lastframe' then continue from the last played frame.  Defaults to 0.
             sendEvents (bool, optoinal): if true then send event info to the Hub, if false then do not send events.  For example used for for practice / debugging. Defaults to True.
@@ -388,6 +583,25 @@ class SingleTrial(FSM):
         print("tgtidx=%d" % (self.tgtidx if self.tgtidx >= 0 else -1))
 
     def next(self, t):
+=======
+        """                 
+        self.tgtidx=tgtidx
+        self.stimSeq=stimSeq
+        self.utopiaController = utopiaController
+        self.stimulusStateStack=stimulusStateStack
+        self.numframes=numframes if numframes else duration/isi
+        self.cueframes=cueframes if cueframes else cueduration/isi
+        self.framesperbit=framesperbit if  framesperbit is not None else 1
+        self.feedbackframes=feedbackframes if feedbackframes else feedbackduration/isi
+        self.waitframes=waitframes if waitframes else waitduration/isi
+        self.selectionThreshold=selectionThreshold
+        self.permute = permute
+        self.stage=0
+        self.stagestart = self.utopiaController.getTimeStamp()
+        print("tgtidx=%d"%(self.tgtidx if self.tgtidx>=0 else -1))
+        
+    def next(self,t):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """get the next state in the sequence, moving through the single trail stages of cue->wait->flicker->feedback
 
         Args:
@@ -395,7 +609,11 @@ class SingleTrial(FSM):
 
         Raises:
             StopIteration: when the whole sequence is complete
+<<<<<<< HEAD
         """
+=======
+        """    
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
         last_stage_dur = self.utopiaController.getTimeStamp()-self.stagestart
         if self.stage == 0:  # trial-start + cue
@@ -433,10 +651,16 @@ class SingleTrial(FSM):
                                          self.tgtidx,
                                          self.utopiaController,
                                          framesperbit=self.framesperbit,
+<<<<<<< HEAD
                                          sendEvents=self.sendEvents, permute=self.permute,
                                          startframe=self.startframe))
             else:  # no selection based stopping
                 self.stimulusStateMachineStack.push(
+=======
+                                         sendEvents=True, permute=self.permute))
+            else: # no selection based stopping
+                self.stimulusStateStack.push(
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
                     Flicker(self.stimSeq,
                             self.numframes,
                             self.tgtidx,
@@ -463,6 +687,7 @@ class SingleTrial(FSM):
                                         tgtState=self.feedbackstate,
                                         sendEvents=False,
                                         numblinkframes=0))
+<<<<<<< HEAD
                 else:  # no selection do the intertrial
                     print('3.wait {}'.format(self.intertrialframes))
                     self.stimulusStateMachineStack.push(
@@ -474,6 +699,18 @@ class SingleTrial(FSM):
         self.stage = self.stage+1
 
 
+=======
+                else: # no selection do the intertrial
+                    print('3.wait')
+                    self.stimulusStateStack.push(
+                        HighlightObject(self.waitframes,-1))
+                    
+        else :
+            raise StopIteration
+        self.stagestart = self.utopiaController.getTimeStamp()
+        self.stage = self.stage+1
+        
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 class CalibrationPhase(FSM):
     """do a complete calibration phase with nTrials x CalibrationTrial
 
@@ -481,16 +718,25 @@ class CalibrationPhase(FSM):
         ValueError: [description]
         ValueError: [description]
         StopIteration: [description]
+<<<<<<< HEAD
     """
 
     def __init__(self, objIDs: int = 8, stimSeq=None, nTrials: int = 10,
                  utopiaController=None, stimulusStateMachineStack: GSM = None,
                  *args, **kwargs):
+=======
+    """    
+    
+    def __init__(self,objIDs:int=8,stimSeq=None,nTrials:int=10,
+                 utopiaController=None,stimulusStateStack:GSM=None,
+                 *args,**kwargs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """do a complete calibration phase with nTrials x CalibrationTrial
 
         Args:
             objIDs (int, optional): the number of output objects. Defaults to 8.
             stimSeq (list-of-lists, optional): (time,outputs) the stimulus sequence to play for the flicker. Defaults to None.
+<<<<<<< HEAD
             nTrials (int | list, optional): the number of calibration trials  OR list of target IDs to give in order. Defaults to 10.
             utopiaController (UtopiaController, optional): the utopiaController for interfacing to the decoder. Defaults to None.
             stimulusStateMachineStack (GSM, optional): the state-machine-stack to add new machines to for playback. Defaults to None.
@@ -515,6 +761,30 @@ class CalibrationPhase(FSM):
         self.tgtidx = -1
 
     def next(self, t):
+=======
+            nTrials (int, optional): the number of calibration trials. Defaults to 10.
+            utopiaController (UtopiaController, optional): the utopiaController for interfacing to the decoder. Defaults to None.
+            stimulusStateStack (GSM, optional): the state-machine-stack to add new machines to for playback. Defaults to None.
+
+        Raises:
+            ValueError: if utopiaController or stimulusStateMachine is not given
+        """   
+
+        self.objIDs=objIDs if hasattr(objIDs, "__len__") else list(range(1,objIDs+1)) 
+        self.stimSeq=stimSeq
+        self.nTrials=nTrials
+        self.utopiaController=utopiaController
+        self.isRunning=False
+        self.args=args
+        self.kwargs=kwargs
+        if self.utopiaController is None : raise ValueError
+        self.stimulusStateStack=stimulusStateStack
+        if self.stimulusStateStack is None : raise ValueError
+        self.trli=0
+        self.tgtidx = -1
+
+    def next(self,t):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """get the next state in the sequence, moving through nTrials calibration trials where each trial has single trail stages of cue->wait->flicker
 
         Args:
@@ -522,8 +792,13 @@ class CalibrationPhase(FSM):
 
         Raises:
             StopIteration: when the whole sequence is complete
+<<<<<<< HEAD
         """
         if not self.isRunning:
+=======
+        """    
+        if not self.isRunning :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             # tell decoder to start cal
             self.utopiaController.modeChange("Calibration.supervised")
             self.isRunning = True
@@ -554,24 +829,39 @@ class PredictionPhase(FSM):
 
     Args:
         FSM ([type]): [description]
+<<<<<<< HEAD
     """
 
     def __init__(self, objIDs, stimSeq=None, nTrials=10,
                  utopiaController=None, stimulusStateMachineStack=None,
                  selectionThreshold=.1, cuedprediction=False, **kwargs):
+=======
+    """    
+
+    def __init__(self,objIDs,stimSeq=None,nTrials=10,
+                 utopiaController=None,stimulusStateStack=None,
+                 selectionThreshold=.1,cuedprediction=False,*args,**kwargs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """do a complete calibration phase with nTrials x CalibrationTrial
 
         Args:
             objIDs (int, optional): the number of output objects. Defaults to 8.
             stimSeq (list-of-lists, optional): (time,outputs) the stimulus sequence to play for the flicker. Defaults to None.
+<<<<<<< HEAD
             nTrials (int|list, optional): the number of calibration trials OR list of target IDs to give in order. Defaults to 10.
             utopiaController (UtopiaController, optional): the utopiaController for interfacing to the decoder. Defaults to None.
             stimulusStateMachineStack (GSM, optional): the state-machine-stack to add new machines to for playback. Defaults to None.
+=======
+            nTrials (int, optional): the number of calibration trials. Defaults to 10.
+            utopiaController (UtopiaController, optional): the utopiaController for interfacing to the decoder. Defaults to None.
+            stimulusStateStack (GSM, optional): the state-machine-stack to add new machines to for playback. Defaults to None.
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             selectionThreshold (float, optional): the Perr threshold for selection. Defaults to .1
             cuedprediction (bool, optional): flag if we do cueing before trial starts.  Default to False.
 
         Raises:
             ValueError: if utopiaController or stimulusStateMachine is not given
+<<<<<<< HEAD
         """
         if objIDs is None:  objIDs=10
         self.objIDs = objIDs if hasattr(objIDs, "__iter__") else list(range(1, objIDs+1))
@@ -581,6 +871,17 @@ class PredictionPhase(FSM):
         self.cuedprediction = cuedprediction
         self.kwargs = kwargs
         self.tgti = 0
+=======
+        """   
+        self.objIDs=objIDs if hasattr(objIDs, "__len__") else list(range(1,objIDs+1)) 
+        self.stimSeq=stimSeq
+        self.nTrials=nTrials
+        self.selectionThreshold=selectionThreshold
+        self.cuedprediction=cuedprediction
+        self.args=args
+        self.kwargs=kwargs
+        self.tgti=0
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         self.tgtidx = -1
         self.isRunning = False
         self.utopiaController = utopiaController
@@ -591,7 +892,11 @@ class PredictionPhase(FSM):
             raise ValueError
         # tell decoder to start cal
 
+<<<<<<< HEAD
     def next(self, t):
+=======
+    def next(self,t):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """get the next state in the sequence, moving through nTrials calibration trials where each trial has single trail stages of cue->wait->flicker->feedback
 
         Args:
@@ -599,8 +904,13 @@ class PredictionPhase(FSM):
 
         Raises:
             StopIteration: when the whole sequence is complete
+<<<<<<< HEAD
         """
         if not self.isRunning:
+=======
+        """    
+        if not self.isRunning :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             self.utopiaController.modeChange("Prediction.static")
             self.isRunning = True
         if self.tgti < len(self.trialSeq):
@@ -620,6 +930,7 @@ class PredictionPhase(FSM):
         else:
             self.utopiaController.modeChange("idle")
             raise StopIteration()
+<<<<<<< HEAD
         self.tgti = self.tgti+1
 
 
@@ -675,6 +986,59 @@ class Experiment(FSM):
         self.stage = 0
 
     def next(self, t):
+=======
+        self.tgti=self.tgti+1
+        
+class Experiment(FSM):
+    """do a complete experiment, with calibration -> prediction
+    """    
+
+    def __init__(self,objIDs,stimSeq=None,nCal=10,nPred=20,
+                 selectionThreshold=.1,cuedprediction=False,
+                 utopiaController=None,stimulusStateStack=None,
+                 numframes=4//isi,calframes=None,predframes=None,
+                 interphaseframes=15//isi,
+                 *args,**kwargs):
+        """do a complete experiment, with calibration -> prediction
+
+        Args:
+            objIDs (int, optional): the number of output objects. Defaults to 8.
+            stimSeq (list-of-lists, optional): (time,outputs) the stimulus sequence to play for the flicker. Defaults to None.
+            nCal (int, optional): the number of calibration trials. Defaults to 10.
+            nPred (int, optional): the number of prediction trials. Defaults to 20.
+            utopiaController (UtopiaController, optional): the utopiaController for interfacing to the decoder. Defaults to None.
+            stimulusStateStack (GSM, optional): the state-machine-stack to add new machines to for playback. Defaults to None.
+            selectionThreshold (float, optional): the Perr threshold for selection. Defaults to .1
+            cuedprediction (bool, optional): flag if we do cueing before trial starts.  Default to False.
+            selectionThreshold (float, optional): [description]. Defaults to .1.
+            cuedprediction (bool, optional): [description]. Defaults to False.
+            utopiaController ([type], optional): [description]. Defaults to None.
+            stimulusStateStack ([type], optional): [description]. Defaults to None.
+            calduration (int, optional): the duration of the calibration flicker. Defaults to 4.
+            predduration (int, optional): the duration of the prediction flicker. Defaults to 10.
+
+        Raises:
+            ValueError: if the utopiaController or stimulusStateStack is not given
+        """        
+        self.objIDs=objIDs if hasattr(objIDs, "__len__") else list(range(1,objIDs+1)) 
+        self.stimSeq=stimSeq
+        self.nCal=nCal
+        self.nPred=nPred
+        self.calframes=calframes if calframes else numframes
+        self.predframes=predframes if predframes else numframes
+        self.interphaseframes = interphaseframes
+        self.selectionThreshold=selectionThreshold
+        self.cuedprediction=cuedprediction
+        self.utopiaController=utopiaController
+        if self.utopiaController is None : raise ValueError
+        self.stimulusStateStack=stimulusStateStack
+        if self.stimulusStateStack is None : raise ValueError
+        self.args=args
+        self.kwargs=kwargs
+        self.stage=0
+
+    def next(self,t):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """get the next state in the sequence, moving through calibration->prediction phases where each trial has single trail stages of cue->wait->flicker->feedback
 
         Args:
@@ -682,6 +1046,7 @@ class Experiment(FSM):
 
         Raises:
             StopIteration: when the whole sequence is complete
+<<<<<<< HEAD
         """
         if self.stage == 0:  # start
             self.stimulusStateMachineStack.push(WaitFor(2/isi))
@@ -700,10 +1065,31 @@ class Experiment(FSM):
         elif self.stage == 3:  # prediction
             self.stimulusStateMachineStack.push(
                 PredictionPhase(self.objIDs, self.stimSeq, self.nPred,
+=======
+        """    
+        if self.stage==0: # start
+            self.stimulusStateStack.push(WaitFor(2/isi))
+        
+        elif self.stage==1: # calibration
+            self.stimulusStateStack.push(
+                CalibrationPhase(self.objIDs,self.stimSeq,self.nCal,
+                                 self.utopiaController,
+                                 self.stimulusStateStack,
+                                 *self.args,numframes=self.calframes,**self.kwargs))
+        
+        elif self.stage==2: # wait-for-classifier
+            # TODO []: do a correct wait for classifier prediction message
+            self.stimulusStateStack.push(WaitFor(self.interphaseframes))
+        
+        elif self.stage==3: # prediction
+            self.stimulusStateStack.push(
+                PredictionPhase(self.objIDs,self.stimSeq,self.nPred,
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
                                 self.utopiaController,
                                 self.stimulusStateMachineStack,
                                 self.selectionThreshold,
                                 self.cuedprediction,
+<<<<<<< HEAD
                                 *self.args, numframes=self.predframes, **self.kwargs))
 
         else:  # finish
@@ -740,11 +1126,49 @@ class Noisetag:
         if stimSeq is None:
             stimSeq = stimFile
         self.set_stimSeq(stimSeq)
+=======
+                                *self.args,numframes=self.predframes,**self.kwargs))
+        
+        else: # finish
+            raise StopIteration()    
+        self.stage=self.stage+1
+
+# use global for the noisecode + utopiaController so can easily
+# share over instantiations of the NoiseTag framework.
+uc=None
+        
+class Noisetag:
+    '''noisetag abstraction layer to handle *both* the sequencing of the stimulus
+    flicker, *and* the communications with the Mindaffect decoder.  Clients can
+    use this class to implement BCI control by:
+     0) setting the flicker sequence to use (method: startFlicker, startFlickerWithSelection, startCalibration, startPrediction, startExpt)
+     1) getting the current stimulus state (method: getStimulusState), and using that to draw the display
+     2) telling Noisetag when *exactly* the stimulus update took place (method: sendStimulusState)
+     3) getting the predictions/selections from noisetag and acting on them. (method: getLastPrediction() or getLastSelection())
+     '''
+    def __init__(self,stimFile=None,utopiaController=None,stimulusStateMachineStack:GSM=None,clientid:str=None):
+        """noisetag abstraction layer to handle *both* the sequencing of the stimulus flicker, *and* the communications with the Mindaffect decoder.
+
+        Args:
+            stimFile (str file-like, optional): the file to load the stimulus sequence from. Defaults to None.
+            utopiaController (UtopiaController, optional): the controller for interfacing to the decoder. Defaults to None.
+            stimulusStateMachineStack (GSM, optional): The state machine stack to add stimulus state machines too. Defaults to None.
+            clientid (str, optional): a label for this client for communications to the decoder. Defaults to None.
+        """        
+
+        # global flicker stimulus sequence
+        if stimFile is None:  stimFile = default_stimFile
+        noisecode = StimSeq.fromFile(stimFile)
+        # binarize the result
+        noisecode.convertstimSeq2int()
+        self.noisecode=noisecode
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
         # stimulus state-machine stack
         # Individual stimulus-state-machines track progress in a single
         # stimulus state playback function.
         # Stack allows sequencing of sets of playback functions in loops
+<<<<<<< HEAD
         if stimulusStateMachineStack is None:
             stimulusStateMachineStack = GSM()
         self.stimulusStateMachineStack = stimulusStateMachineStack
@@ -777,11 +1201,35 @@ class Noisetag:
 
     def init_utopiaController(self, utopiaController):
         if utopiaController is None:
+=======
+        if stimulusStateMachineStack is None :
+            stimulusStateMachineStack=GSM()
+        self.stimulusStateMachineStack=stimulusStateMachineStack
+        self.laststate=(None,None,None,None)
+        self.objIDs=None
+        self.clientid=clientid
+
+    def connect(self,host:str=None,port:int=-1,queryifhostnotfound:bool=True,timeout_ms:int=5000):
+        """connect to the utopia hub
+
+        Args:
+            host (str, optional): the hub hostname or ip address. Defaults to None.
+            port (int, optional): the hub port. Defaults to -1.
+            queryifhostnotfound (bool, optional): if auto-discovery fails do we query the user for the host IP. Defaults to True.
+            timeout_ms (int, optional): timeout in milliseconds for host autodiscovery or connection. Defaults to 5000.
+
+        Returns:
+            bool: are we currently connected to the hub
+        """        
+
+        if self.utopiaController is None :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             # use the global controller if none given
             global uc
             if uc is None:
                 # auto-connect the global controller if none given
                 uc = UtopiaController(clientid=self.clientid)
+<<<<<<< HEAD
             self.utopiaController = uc
         else:
             self.utopiaController = utopiaController
@@ -799,6 +1247,10 @@ class Noisetag:
             bool: are we currently connected to the hub
         """
         if self.utopiaController.isConnected():
+=======
+            self.utopiaController=uc
+        if self.utopiaController.isConnected() :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             return True
         self.utopiaController.autoconnect(host, port,
                                           queryifhostnotfound=queryifhostnotfound,
@@ -811,9 +1263,15 @@ class Noisetag:
 
         Returns:
             bool: are we connected to the hub
+<<<<<<< HEAD
         """
 
         if self.utopiaController:
+=======
+        """        
+
+        if self.utopiaController :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             return self.utopiaController.isConnected()
         return False
 
@@ -822,6 +1280,7 @@ class Noisetag:
 
         Returns:
             str: the hub host:port we are currently connected to
+<<<<<<< HEAD
         """
 
         if self.utopiaController:
@@ -829,10 +1288,20 @@ class Noisetag:
         return None
 
     def set_isi(self, new_isi: float):
+=======
+        """    
+
+        if self.utopiaController :
+            return self.utopiaController.gethostport()
+        return None
+        
+    def set_isi(self,new_isi:float):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         global isi
         isi = new_isi
         return isi
 
+<<<<<<< HEAD
     def isRunning(self):
         """return if we are currently running a stimulus sequence
 
@@ -845,15 +1314,28 @@ class Noisetag:
     # stimulus sequence methods via the stimulus state machine stack
     # returns if sequence is still running
     def updateStimulusState(self, t=None):
+=======
+    # stimulus sequence methods via the stimulus state machine stack
+    # returns if sequence is still running
+    def updateStimulusState(self,t=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """ update to the next stimulus state from the current sequence
 
         Args:
             t (int, optional): the current time. Defaults to None.
+<<<<<<< HEAD
         """
 
         self.stimulusStateMachineStack.next(t)
 
     def getStimulusState(self, objIDs=None):
+=======
+        """     
+
+        self.stimulusStateMachineStack.next(t)
+
+    def getStimulusState(self,objIDs=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """return the current stimlus state
 
         Args:
@@ -861,12 +1343,17 @@ class Noisetag:
 
         Returns:
             StimulusState: the current stimulus state tuple (stimState,target_idx,objIDs,sendEvent)
+<<<<<<< HEAD
         """
+=======
+        """   
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
         # update set active objects if a set is given
         if objIDs is not None:
             self.setActiveObjIDs(objIDs)
         # get the complete stimulus state (for MAXOBIDS objects)
+<<<<<<< HEAD
         stimState, tgtidx, objIDs, sendEvents = self.stimulusStateMachineStack.get()
         # subset to the active set, matching objIDs to allobjIDs
         # N.B. objID-1 to map from objID->stimStateIndex
@@ -881,6 +1368,17 @@ class Noisetag:
 
 
     def setActiveObjIDs(self, objIDs):
+=======
+        stimState,tgtidx,objIDs,sendEvents = self.stimulusStateMachineStack.get()
+        # subset to the active set, matching objIDs to allobjIDs
+        # N.B. objID-1 to map from objID->stimStateIndex
+        if stimState is not None :
+            stimState = [ stimState[i-1] for i in self.objIDs ]
+        self.laststate = (stimState,tgtidx,self.objIDs,sendEvents)
+        return self.laststate
+    
+    def setActiveObjIDs(self,objIDs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """update the set of active objects we send info to decoder about
 
         Args:
@@ -888,12 +1386,21 @@ class Noisetag:
 
         Returns:
             list-of-int: the set of active object IDs
+<<<<<<< HEAD
         """
 
         self.objIDs = objIDs
         return self.objIDs
 
     def setnumActiveObjIDs(self, nobj: int):
+=======
+        """        
+        
+        self.objIDs=objIDs
+        return self.objIDs
+    
+    def setnumActiveObjIDs(self,nobj:int):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """update to say number active objects
 
         Args:
@@ -901,11 +1408,17 @@ class Noisetag:
 
         Returns:
             list-of-int: the current set of active object IDs
+<<<<<<< HEAD
         """
         objIDs = list(range(1, nobj+1))
+=======
+        """        
+        objIDs=list(range(1,nobj+1))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         return self.setActiveObjIDs(objIDs)
 
     # decoder interaction methods via. utopia controller
+<<<<<<< HEAD
     def encodeFloatState(self, state, mins: float = 0.0, maxs: float = 1.0, mini: int = 0, maxi: int = 255):
         """map from floating point stimulus state, to integer for sending to decoder
 
@@ -920,10 +1433,14 @@ class Noisetag:
         return state
 
     def sendStimulusState(self, timestamp=None, targetState=None, injectSignal=None):
+=======
+    def sendStimulusState(self,timestamp=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """send the current stimulus state information to the decoder
 
         Args:
             timestamp (int, optional): timestamp to use when sending the stimulus state information. Defaults to None.
+<<<<<<< HEAD
             targetState (int, optional): state of the 'true' target.  If None, then computed from the state of the target idx.  Defaults to None.
             injectSignal (int|float, optional): amplitude of a signal to inject into the fake data stream for debugging.  If None then use the target stimulus state.  Defaults to None.
         """
@@ -957,22 +1474,45 @@ class Noisetag:
                                                 targetState,
                                                 objIDs,
                                                 injectSignal)
+=======
+        """    
+
+        stimState,target_idx,objIDs,sendEvent=self.laststate
+        targetState = stimState[target_idx] if target_idx is not None and target_idx>=0 else -1
+        # send info about the stimulus displayed
+        if sendEvent and stimState is not None :
+            #print((stimState,targetState))
+            # TODO[]: change to use the target_idx
+            self.utopiaController.sendStimulusEvent(stimState,
+                                                    timestamp,
+                                                    targetState,
+                                                    objIDs)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     def getNewMessages(self):
         """get all new messages from the decoder
 
         Returns:
             list-of-UtopiaMessage: a list of all new UtopiaMessages recieved from the hub/decoder
+<<<<<<< HEAD
         """
+=======
+        """ 
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         if self.utopiaController:
             return self.utopiaController.msgs
         return []
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     def getLastPrediction(self):
         """get the last prediction recieved from the hub/decoder
 
         Returns:
             PredictedTargetProb: the last recieved PredictedTargetProb message
+<<<<<<< HEAD
         """
 
         if self.utopiaController:
@@ -1001,20 +1541,44 @@ class Noisetag:
         """
         if self.utopiaController:
             self.utopiaController.clearLastPredictionDistribution()
+=======
+        """   
+
+        if self.utopiaController :
+            return self.utopiaController.getLastPrediction()
+        return None
+
+
+    def clearLastPrediction(self):
+        """clear the information about the last recieved target prediction
+        """   
+        if self.utopiaController:
+            self.utopiaController.clearLastPrediction()
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     def getLastSignalQuality(self):
         """return the last signal quality message recieved from the hub/decoder
 
         Returns:
             ElectrodeQuality: the last ElectrodeQuality message from the hub/decoder
+<<<<<<< HEAD
         """
         if self.utopiaController:
+=======
+        """ 
+        if self.utopiaController :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             return self.utopiaController.getLastSignalQuality()
         return None
 
     def clearLastSignalQuality(self):
         """clear the last signal quality message
+<<<<<<< HEAD
         """
+=======
+        """   
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         if self.utopiaController:
             self.utopiaController.clearLastSignalQuality()
 
@@ -1023,31 +1587,53 @@ class Noisetag:
 
         Returns:
             Selection: the last Selection message recieved from the hub/decoder
+<<<<<<< HEAD
         """
         if self.utopiaController:
+=======
+        """      
+        if self.utopiaController :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             return self.utopiaController.getLastSelection()
         return None
 
     def clearLastSelection(self):
         """clear the last selelction message from the hub/decoder
+<<<<<<< HEAD
         """
         if self.utopiaController:
             self.utopiaController.clearLastSelection()
 
     def addMessageHandler(self, cb):
+=======
+        """        
+        if self.utopiaController:
+            self.utopiaController.clearLastSelection()
+
+    def addMessageHandler(self,cb):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """add a handler which is called back when a new message is recieved
 
         Args:
             cb (function): the function to be called for each newly recieved message
+<<<<<<< HEAD
         """
         if self.utopiaController:
             self.utopiaController.addMessageHandler(cb)
 
     def addPredictionHandler(self, cb):
+=======
+        """   
+        if self.utopiaController :
+            self.utopiaController.addMessageHandler(cb)
+
+    def addPredictionHandler(self,cb):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """add a handler which is called back when a Prediction is recieved from the decoder/hub
 
         Args:
             cb (function): the function to be called for each newly recieved Prediction
+<<<<<<< HEAD
         """
         if self.utopiaController:
             self.utopiaController.addPredictionHandler(cb)
@@ -1062,12 +1648,24 @@ class Noisetag:
             self.utopiaController.addPredictionDistributionHandler(cb)
 
     def addSelectionHandler(self, cb):
+=======
+        """        
+        if self.utopiaController :
+            self.utopiaController.addPredictionHandler(cb)
+
+    def addSelectionHandler(self,cb):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """add a handler which is called back when a Selection is recieved from the decoder/hub
 
         Args:
             cb (function): the function to be called for every newly recieved Selection
+<<<<<<< HEAD
         """
         if self.utopiaController:
+=======
+        """   
+        if self.utopiaController :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             self.utopiaController.addSelectionHandler(cb)
 
     def addNewTargetHandler(self, cb):
@@ -1084,7 +1682,11 @@ class Noisetag:
 
         Args:
             tsclock (TimeStampClock): the time-stamp clock object to use
+<<<<<<< HEAD
         """
+=======
+        """        
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         self.utopiaController.setTimeStampClock(tsclock)
 
     def getTimeStamp(self):
@@ -1092,55 +1694,100 @@ class Noisetag:
 
         Returns:
             int: the timestamp for the curren time in milliseconds
+<<<<<<< HEAD
         """
         return self.utopiaController.getTimeStamp() if self.utopiaController is not None else -1
 
     def log(self, msg):
+=======
+        """ 
+        return self.utopiaController.getTimeStamp() if self.utopiaController is not None else -1
+
+    def log(self,msg):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """send a Log message to the decoder/hub
 
         Args:
             msg (str): the Log message to send
+<<<<<<< HEAD
         """
         if self.utopiaController:
             self.utopiaController.log(msg)
 
     def modeChange(self, newmode):
+=======
+        """  
+        if self.utopiaController:
+            self.utopiaController.log(msg)
+
+
+    def modeChange(self,newmode):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """manually change the decoder mode
 
         Args:
             newmode (str): the new mode string to send to the hub/decoder
+<<<<<<< HEAD
         """
         if self.utopiaController:
             self.utopiaController.modeChange(newmode)
 
     def subscribe(self, msgs):
+=======
+        """        
+        if self.utopiaController:
+            self.utopiaController.modeChange(newmode)
+
+    def subscribe(self,msgs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """tell the hub we will subscribe to this set of message IDs
 
         Args:
             msgs (str): a list of messageIDs to subscribe to.  See mindaffectBCI.utopiaclient for the list of message types and IDs
+<<<<<<< HEAD
         """
         if self.utopiaController:
             self.utopiaController.subscribe(msgs)
 
     def addSubscription(self, msgs):
+=======
+        """     
+        if self.utopiaController:
+            self.utopiaController.subscribe(msgs)
+
+    def addSubscription(self,msgs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """add a set of messageIDs to our current set of subscribed message types.
 
         Args:
             msgs (str): a list of messageIDs to subscribe to.  See mindaffectBCI.utopiaclient for the list of message types and IDs
+<<<<<<< HEAD
         """
         if self.utopiaController:
             self.utopiaController.addSubscription(msgs)
 
     def removeSubscription(self, msgs):
+=======
+        """    
+        if self.utopiaController:
+            self.utopiaController.addSubscription(msgs)
+
+    def removeSubscription(self,msgs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """remove a set of messageIDs to our current set of subscribed message types.
 
         Args:
             msgs (str): a list of messageIDs to unsubscribe from.  See mindaffectBCI.utopiaclient for the list of message types and IDs
+<<<<<<< HEAD
         """
+=======
+        """    
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         if self.utopiaController:
             self.utopiaController.removeSubscription(msgs)
 
     # methods to define what (meta) stimulus sequence we will play
+<<<<<<< HEAD
     def startExpt(self, nCal=1, nPred=20, selectionThreshold=.1,
                   cuedprediction=False,  objIDs=None,
                   **kwargs):
@@ -1167,6 +1814,99 @@ class Noisetag:
         """
 
         if self.stimulusStateMachineStack.stack:
+=======
+    def startExpt(self,nCal=1,nPred=20,selectionThreshold=.1,
+                  cuedprediction=False,
+                  *args,**kwargs):
+        """Start the sequence for a full Calibration->Prediction experiment.
+
+        Args:
+            nCal (int, optional): the number of calibration trials. Defaults to 10.
+            nPred (int, optional): the number of prediction trials. Defaults to 20.
+            selectionThreshold (float, optional): the Perr threshold for selection. Defaults to .1
+            cuedprediction (bool, optional): flag if we do cueing before trial starts.  Default to False.
+        """   
+
+        if  self.stimulusStateMachineStack.stack :
+            print("Warning: replacing running sequence?")
+            self.stimulusStateMachineStack.clear()
+        self.stimulusStateMachineStack.push(
+            Experiment(self.objIDs,self.noisecode.stimSeq,
+                       nCal,nPred,
+                       selectionThreshold,cuedprediction,
+                       self.utopiaController,
+                       self.stimulusStateMachineStack,
+                       *args,**kwargs))
+
+
+    def startCalibration(self,nTrials=10,stimSeq=None,
+                         *args,**kwargs):
+        """setup and run a complete calibration phase
+
+        Args:
+            nTrials (int, optional): number of calibration trials to run. Defaults to 10.
+            stimSeq (list-of-lists-of-int, optional): the stimulus sequence to play for the flicker in the calibration phase. Defaults to None.
+        """ 
+        if  self.stimulusStateMachineStack.stack :
+            print("Warning: replacing running sequence?")
+            self.stimulusStateMachineStack.clear()
+        
+        self.stimulusStateMachineStack.push(
+            CalibrationPhase(self.objIDs,
+                             self.noisecode.stimSeq,
+                             nTrials,
+                             self.utopiaController,
+                             self.stimulusStateMachineStack,
+                             *args,**kwargs))
+
+
+    def startPrediction(self,nTrials=10,stimSeq=None,
+                        *args,**kwargs):
+        """setup and run a complete prediction phase
+
+        Args:
+            nTrials (int, optional): number of prediction trials to run. Defaults to 10.
+            stimSeq (list-of-lists-of-int, optional): the stimulus sequence to play for the flicker in the calibration phase. Defaults to None.
+        """ 
+        if  self.stimulusStateMachineStack.stack :
+            print("Warning: replacing running sequence?")
+            self.stimulusStateMachineStack.clear()
+        self.stimulusStateMachineStack.push(
+            PredictionPhase(self.objIDs,
+                            self.noisecode.stimSeq,
+                            nTrials,
+                            self.utopiaController,
+                            self.stimulusStateMachineStack,
+                            *args,**kwargs))
+
+
+    def startSingleTrial(self,numframes:int=100,tgtidx:int=-1,*args,**kwargs):
+        """setup and run a single flicker trial, with (optional)cue->wait->flicker->feedback
+
+        Args:
+            numframes (int, optional): the number of frames for the flicker. Defaults to 100.
+            tgtidx (int, optional): the index in the stimSequence of the target, -1 if no cued target.  Default to -1
+        """ 
+        if  self.stimulusStateMachineStack.stack :
+            print("Warning: replacing running sequence?")
+            self.stimulusStateMachineStack.clear()
+        self.stimulusStateMachineStack.push(
+            SingleTrial(self.noisecode.stimSeq,
+                        tgtidx,
+                        self.utopiaController,
+                        self.stimulusStateMachineStack,
+                        numframes,
+                        *args,**kwargs))
+
+    def startFlicker(self,numframes=100,tgtidx=-1,*args,**kwargs):
+        """setup and run the just the flicker
+
+        Args:
+            numframes (int, optional): the number of frames for the flicker. Defaults to 100.
+            tgtidx (int, optional): the index in the stimSequence of the target, -1 if no cued target.  Default to -1
+        """ 
+        if  self.stimulusStateMachineStack.stack :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             print("Warning: replacing running sequence?")
             self.stimulusStateMachineStack.clear()
 
@@ -1334,15 +2074,23 @@ class Noisetag:
             Flicker(self.noisecode,
                     numframes,
                     tgtidx,
+<<<<<<< HEAD
                     *args, **kwargs))
 
     def startFlickerWithSelection(self, numframes: int = 60*4,
                                   tgtidx: int = -1, stimSeq=None, objIDs=None, *args, **kwargs):
+=======
+                    *args,**kwargs))
+        
+    def startFlickerWithSelection(self,numframes:int=100,
+                                  tgtidx:int=-1,*args,**kwargs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """setup and run the just the flicker, with early stopping if the BCI selects an output
 
         Args:
             numframes (int, optional): the number of frames for the flicker. Defaults to 100.
             tgtidx (int, optional): the index in the stimSequence of the target, -1 if no cued target.  Default to -1
+<<<<<<< HEAD
             numframes (int, optional): the number of frames to flicker for. Defaults to None.
             framesperbit (int, optional): the number of video frames per stimSeq time-points. Defaults to 1.
             selectionThreshold (float, optional): Target error probability for selection. Defaults to None.
@@ -1358,6 +2106,10 @@ class Noisetag:
             sendEvents (bool, optoinal): if true then send event info to the Hub, if false then do not send events.  For example used for for practice / debugging. Defaults to True.
         """
         if self.stimulusStateMachineStack.stack:
+=======
+        """ 
+        if  self.stimulusStateMachineStack.stack :
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             print("Warning: replacing running sequence?")
             self.stimulusStateMachineStack.clear()
 
@@ -1377,6 +2129,7 @@ class Noisetag:
 
 class sumstats:
     '''Utility class to record summary stastics for, e.g. frame flip timing'''
+<<<<<<< HEAD
 
     def __init__(self, bufsize: int = 60*2):
         self.buf = [0]*(bufsize)  # ring-buffer, 700 entries
@@ -1390,24 +2143,51 @@ class sumstats:
         self.maxx = 0
 
     def addpoint(self, x):
+=======
+    def __init__(self,bufsize:int=60*2):
+        self.buf=[0]*(bufsize) # ring-buffer, 700 entries
+        self.N=0
+        self.sx=0
+        self.mu=None
+        self.median=None
+        self.sx2=0
+        self.sigma2=None
+        self.minx=0
+        self.maxx=0
+
+    def addpoint(self,x):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """add a point to the running buffer of statistics
 
         Args:
             x (float): the point to add
         """
+<<<<<<< HEAD
         self.buf[self.N % len(self.buf)] = x  # ring-buffer
         self.N = self.N+1
         self.sx = self.sx+x
         self.sx2 = self.sx2+x*x
         self.minx = x if x < self.minx else self.minx
         self.maxx = x if x > self.maxx else self.maxx
+=======
+        self.buf[self.N%len(self.buf)]=x # ring-buffer
+        self.N=self.N+1
+        self.sx=self.sx+x
+        self.sx2=self.sx2+x*x
+        self.minx=x if x<self.minx else self.minx
+        self.maxx=x if x>self.maxx else self.maxx
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     def hist(self):
         """get the histogram of statistics
 
         Returns:
             str: string summary of the data histogram
+<<<<<<< HEAD
         """
+=======
+        """  
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         try:
             import numpy
             buf = self.buf[:min(len(self.buf), self.N)]
@@ -1425,6 +2205,7 @@ class sumstats:
 
     def update_statistics(self):
         """compute updated summary statistics, including: mu=average, med=median, sigma=std-dev, min=min, max=max
+<<<<<<< HEAD
         """
         import statistics
         buf = self.buf[:min(len(self.buf), self.N)]
@@ -1433,18 +2214,37 @@ class sumstats:
         self.sigma = statistics.stdev(buf) if len(buf) > 2 else -1
         self.min = min(buf) if len(buf) > 0 else -1
         self.max = max(buf) if len(buf) > 0 else -1
+=======
+        """  
+        import statistics
+        buf = self.buf[:min(len(self.buf),self.N)]
+        self.mu = statistics.mean(buf) if len(buf)>0 else -1
+        self.median= statistics.median(buf) if len(buf)>0 else -1
+        self.sigma=statistics.stdev(buf) if len(buf)>2 else -1
+        self.min = min(buf) if len(buf)>0 else -1
+        self.max = max(buf) if len(buf)>0 else -1
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     def __str__(self):
         """string representation of the summary statistics
 
         Returns:
             str: string representation of the summary statistics
+<<<<<<< HEAD
         """
         self.update_statistics()
         return "%f,%f (%f,[%f,%f])" % (self.mu, self.median, self.sigma, self.min, self.max)
 
 
 def doFrame(t, stimState, tgt_idx=-1, objIDs=None, utopiaController=None):
+=======
+        """   
+        self.update_statistics()
+        return "%f,%f (%f,[%f,%f])"%(self.mu,self.median,self.sigma,self.min,self.max)
+
+
+def doFrame(t,stimState,tgt_idx=-1,objIDs=None,utopiaController=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """utility function to print a summary of a single frame of a stimulus sequence
 
     Args:
@@ -1453,6 +2253,7 @@ def doFrame(t, stimState, tgt_idx=-1, objIDs=None, utopiaController=None):
         tgt_idx (int, optional): the index of the cued target (if set), -1 if no target. Defaults to -1.
         objIDs (list-of-int, optional): the used object ids for each output. Defaults to None.
         utopiaController (UtopiaController, optional): the controller for communcation to the decoder. Defaults to None.
+<<<<<<< HEAD
     """
     if tgt_idx >= 0:
         tgtState = stimState[tgt_idx]
@@ -1478,6 +2279,17 @@ def run(symbols=None, ncal: int = 10, npred: int = 10, cuedprediction: bool = Tr
         stimseq (str, optional): [description]. Defaults to None.
         selectionThreshold (float, optional): [description]. Defaults to .1.
     """
+=======
+    """ 
+    if tgt_idx>=0 :
+        tgtState = stimState[tgt_idx]
+        print("*" if tgtState>0 else ".",end='',flush=True)
+    else:
+        print('_',end='',flush=True)
+    
+
+if __name__ == "__main__":
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     # make the noisetag object to manage the tagging selections
     nt = Noisetag(stimSeq=stimseq, clientid='fakepresentation')
     nt.connect()

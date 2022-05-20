@@ -1,7 +1,11 @@
 from scipy.io import loadmat
 from mindaffectBCI.decoder.utils import window_axis, block_randomize, butter_sosfilt
 import numpy as np
+<<<<<<< HEAD
 def load_mTRF_audio(datadir, regressor='envelope', ntrl=15, filterband=((45,65),(0,.5),(15,-1)), fs_out=60, nvirt_out=30, verb=1):
+=======
+def load_mTRF_audio(datadir, regressor='envelope', ntrl=15, stopband=((45,65),(0,.5),(15,-1)), fs_out=60, nvirt_out=30, verb=1):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     d = loadmat(datadir)
     X = d['EEG'] # (nSamp,d)
     Y = d[regressor] # (nSamp,e)

@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 #  Copyright (c) 2019 MindAffect B.V.
 #  Author: Jason Farquhar <jadref@gmail.com>
+=======
+#  Copyright (c) 2019 MindAffect B.V. 
+#  Author: Jason Farquhar <jason@mindaffect.nl>
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -18,6 +23,7 @@
 import subprocess
 import os
 from time import sleep
+<<<<<<< HEAD
 import signal
 
 # set this to use a specific java exec location if available
@@ -35,6 +41,16 @@ def run(label='', logdir=None, port: int = 8400, verb: int = -1):
     # make the logs directory if not already there
     if logdir is None:
         logdir = os.path.join(pydir, '../../logs')
+=======
+
+def run(label='', logdir=None):
+    pydir = os.path.dirname(os.path.abspath(__file__)) # mindaffectBCI/decoder/startUtopiaHub.py
+    bindir = os.path.join(pydir,'..','hub') 
+
+    # make the logs directory if not already there
+    if logdir is None:
+        logdir=os.path.join(pydir,'../../logs')
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     logdir = os.path.expanduser(logdir)
     if not os.path.exists(logdir):
         try:
@@ -42,7 +58,11 @@ def run(label='', logdir=None, port: int = 8400, verb: int = -1):
         except:
             print("Error making the log directory {}".format(logdir))
     if not os.path.exists(logdir):
+<<<<<<< HEAD
         logdir = pydir
+=======
+            logdir=pydir
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     print("Saving to {}".format(logdir))
 
     # command to run the java hub
@@ -52,6 +72,7 @@ def run(label='', logdir=None, port: int = 8400, verb: int = -1):
         logfile = "mindaffectBCI_{}.txt".format(label)
     else:
         logfile = "mindaffectBCI.txt"
+<<<<<<< HEAD
     args = ("{:d}".format(port), "{:d}".format(verb),
             os.path.join(logdir, logfile))
 
@@ -79,3 +100,16 @@ if __name__ == "__main__":
     hub = run(logdir='~/Desktop/logs')
     while True:
         sleep(1)
+=======
+    args = ("8400","0",os.path.join(logdir,logfile))
+
+    # run the command, waiting until it has finished
+    print("Running command: {}".format(cmd+args))
+    utopiaHub = subprocess.Popen(cmd + args, cwd=bindir, shell=False)#,
+                               #stdin=subprocess.DEVNULL, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    sleep(1)
+    return utopiaHub
+
+if __name__=="__main__":
+    run(logdir='~/Desktop/logs')
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a

@@ -1,5 +1,9 @@
 # Copyright (c) 2019 MindAffect B.V. 
+<<<<<<< HEAD
 #  Author: Jason Farquhar <jadref@gmail.com>
+=======
+#  Author: Jason Farquhar <jason@mindaffect.nl>
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -20,7 +24,11 @@ from mindaffectBCI.decoder.utils import window_axis, idOutliers, zero_outliers
 #@function
 def updateSummaryStatistics(X, Y, stimTimes=None, 
                             Cxx=None, Cxy=None, Cyy=None, 
+<<<<<<< HEAD
                             badEpThresh=4, badWinThresh=3,  halflife_samp=1, cxxp=True, cyyp=True, tau=None,
+=======
+                            badEpThresh=4, halflife_samp=1, cxxp=True, cyyp=True, tau=None,
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
                             offset=0, center=True, unitnorm=True, zeropadded:bool=True, perY=True):
     '''
     Compute updated summary statistics (Cxx_dd, Cxy_yetd, Cyy_yetet) for new data in X with event-info Y
@@ -30,7 +38,13 @@ def updateSummaryStatistics(X, Y, stimTimes=None,
                d=#electrodes tau=#response-samples  nEpoch=#stimulus events to process
          OR
           (nTrl, nSamp, d)
+<<<<<<< HEAD
       Y_TSye = (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
+=======
+      Y_TSye = (nTrl, nEp, nY, nE): Indicator for which events occured for which outputs
+         OR
+           (nTrl, nSamp, nY, nE)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
                nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
       stimTimes_samp = (nTrl, nEp) sample times for start each epoch.  Used to detect
                overlapping responses
@@ -84,6 +98,7 @@ def updateSummaryStatistics(X, Y, stimTimes=None,
     # update the cross covariance XY
     Cxy = updateCxy(Cxy, X, Y, stimTimes, tau, wght, offset=offset, center=center, unitnorm=unitnorm)
     # Update Cxx
+<<<<<<< HEAD
     if cxxp:
         if cxxp is True:
             Cxx = updateCxx(Cxx, X, stimTimes, tau, wght, offset=offset, center=center, unitnorm=unitnorm)
@@ -91,6 +106,10 @@ def updateSummaryStatistics(X, Y, stimTimes=None,
             Cxx = updateCxx_n(Cxx, X, Y, stimTimes, tau, wght, offset=offset, center=center, unitnorm=unitnorm)
         elif cxxp == 'signal': # estimate using only the non-stimulus data
             Cxx = updateCxx_s(Cxx, X, Y, stimTimes, tau, wght, offset=offset, center=center, unitnorm=unitnorm)
+=======
+    if (cxxp):
+        Cxx = updateCxx(Cxx, X, stimTimes, None, wght, offset=offset, center=center, unitnorm=unitnorm)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     # ensure Cyy has the right size if not entry-per-model
     if (cyyp):
@@ -99,6 +118,7 @@ def updateSummaryStatistics(X, Y, stimTimes=None,
         
     return Cxx, Cxy, Cyy
 
+<<<<<<< HEAD
 
 def match_labels(Y_TSye, label_matcher=None):
     match_ax = (-1,-2) if Y_TSye.ndim==4 else -1 # axis to match over
@@ -133,10 +153,15 @@ def get_signal_indicator(Y_TSye, tau:int=10, offset:int=0, label_matcher=None):
     return sig_TS
 
 def updateCxx_n(Cxx, X_TSd, Y_TSye=None, stimTimes=None, tau:int=None, wght:float=1, offset:int=0, center:bool=False, unitnorm:bool=True):
+=======
+#@function
+def updateCxx(Cxx, X, stimTimes=None, tau:int=None, wght:float=1, offset:int=0, center:bool=False, unitnorm:bool=True):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     '''
     Args:
         Cxx_dd (ndarray (d,d)): current data covariance
         X_TSd (nTrl, nSamp, d): raw response at sample rate
+<<<<<<< HEAD
         Y_TSye = (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
                 nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
         stimTimes_samp (ndarray (nTrl, nEp)): sample times for start each epoch.  Used to detect
@@ -182,6 +207,8 @@ def updateCxx(Cxx, X, stimTimes=None, tau:int=None, wght:float=1, offset:int=0, 
         X_TSd (nTrl, nSamp, d): raw response at sample rate
         Y_TSye = (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
                 nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         stimTimes_samp (ndarray (nTrl, nEp)): sample times for start each epoch.  Used to detect
         wght (float): weight to accumulate this Cxx with the previous data, s.t. Cxx = Cxx_old*wght + Cxx_new.  Defaults to 1.
         center (bool): flag if center the data before computing covariance? Defaults to True.
@@ -221,6 +248,7 @@ def updateCxy(Cxy, X, Y, stimTimes=None, tau=None, wght=1, offset=0, center=Fals
     '''
     if tau is None: # estimate the tau
         tau = Cxy.shape[-2]
+<<<<<<< HEAD
     if X.ndim==2: # put trial dim back in
         Y = Y.reshape( (1,)*(3-X.ndim) + Y.shape)
         X = X.reshape( (1,)*(3-X.ndim) + X.shape)
@@ -230,6 +258,10 @@ def updateCxy(Cxy, X, Y, stimTimes=None, tau=None, wght=1, offset=0, center=Fals
         X = X.reshape(X.shape[:2]+(-1,))
     if tau > X.shape[1]:
         tau = X.shape[1]
+=======
+    if Y.ndim == 3:
+        Y = Y[np.newaxis, :, :, :] # add missing trial dim
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     #if offset<-tau+1:
     #    raise NotImplementedError("Cant offset backwards by more than window size")
     #if offset>0:
@@ -237,6 +269,7 @@ def updateCxy(Cxy, X, Y, stimTimes=None, tau=None, wght=1, offset=0, center=Fals
     if verb > 1: print("tau={}".format(tau))
     if stimTimes is None:
         # X, Y are at sample rate, slice X every sample
+<<<<<<< HEAD
         #Xe = window_axis(X, winsz=tau, axis=-2) # (nTrl, nSamp, tau, d)
         inner_len = max(1,X.shape[1]-tau+1)
         # shrink Y w.r.t. the window and shift to align with the offset
@@ -273,6 +306,32 @@ def updateCxy(Cxy, X, Y, stimTimes=None, tau=None, wght=1, offset=0, center=Fals
         #print("{}/{} X={}  Xet={}".format(taui,tau,X.shape,Xet.shape))
         XY[:,:,taui,:] = np.einsum("TSye, TSd->yed", Yet, Xet, casting='unsafe', dtype=X.dtype)
 
+=======
+        Xe = window_axis(X, winsz=tau, axis=-2) # (nTrl, nSamp, tau, d)
+        # shrink Y w.r.t. the window and shift to align with the offset
+        if offset <=0 : # shift Y forwards
+            Ye = Y[:, -offset:Xe.shape[-3]-offset, :, :] # shift fowards and shrink
+            if offset < -tau: # zero pad to size
+                pad = np.zeros(Y.shape[:1]+(Xe.shape[-3]-Ye.shape[1],)+Y.shape[2:], dtype=Y.dtype)
+                Ye = np.append(Ye,pad,1)        
+        elif offset>0: # shift and pad
+            Ye = Y[:, :Xe.shape[-3]-offset, :, :] # shrink
+            pad = np.zeros(Y.shape[:1]+(Xe.shape[-3]-Ye.shape[1],)+Y.shape[2:], dtype=Y.dtype)
+            Ye = np.append(pad,Ye,1) # pad to shift forwards
+
+    else:
+        Xe = X
+        Ye = Y
+    if Xe.ndim == 3:
+        Xe = Xe[np.newaxis, :, :, :]
+
+    if verb > 1: print("Xe={}\nYe={}".format(Xe.shape, Ye.shape))
+
+    # LOOPY version as einsum doens't manage the memory well...
+    XY = np.zeros( (Ye.shape[-2],Ye.shape[-1],Xe.shape[-2],Xe.shape[-1]), dtype=Xe.dtype)
+    for tau in range(Xe.shape[-2]):
+        XY[:,:,tau,:] = np.einsum("TSye, TSd->yed", Ye, Xe[:,:,tau,:], casting='unsafe', dtype=Xe.dtype)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     #XY = np.einsum("TSye, TStd->yetd", Ye.reshape((-1,)+Ye.shape[-2:]), Xe.reshape((-1,)+Xe.shape[-2:]))
 
@@ -305,7 +364,11 @@ def updateCyy(Cyy, Y, stimTime=None, tau=None, wght=1, offset:float=0, zeropadde
       wght (float) : weighting for the new vs. old data
       unitnorm(bool) : flag if we normalize the Cyy with number epochs
     Returns:
+<<<<<<< HEAD
       Cyy_yetet (nY, tau, nE, tau, nE):
+=======
+      Cyy_yetet (nY, tau, nE, nE):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     '''
     if perY:
         MM = compCyy_diag_perY(Y,tau,unitnorm=unitnorm) # (tau, nY, nE, nE)
@@ -326,6 +389,7 @@ def Cyy_diag2full(Cyy_tyee):
     """    
     # BODGE: tau-diag Cyy entries to the 'correct' shape
     # (tau,nY,nE,nE) -> (nY,nE,tau,nE,tau)
+<<<<<<< HEAD
     Cyy4_tyee = Cyy_tyee if Cyy_tyee.ndim>3 else Cyy_tyee[:, np.newaxis, ...] # (tau,nE,nE) -> (tau,1,nE,nE)
     Cyy_yetet = np.zeros((Cyy4_tyee.shape[-3],Cyy4_tyee.shape[-2],Cyy4_tyee.shape[-4],Cyy4_tyee.shape[-2],Cyy4_tyee.shape[-4]),dtype=Cyy_tyee.dtype) # (nY,nE,tau,nE,tau)
     # fill in the block diagonal entries
@@ -334,6 +398,17 @@ def Cyy_diag2full(Cyy_tyee):
         for j in range(i+1,Cyy4_tyee.shape[-4]):
             Cyy_yetet[...,:,i,:,j] = Cyy4_tyee[j-i,:,:,:]
             Cyy_yetet[...,:,j,:,i] = Cyy4_tyee[j-i,:,:,:].swapaxes(-2,-1) # transpose the event types
+=======
+    if Cyy_tyee.ndim == 3: # (tau,nE,nE) -> (tau,1,nE,nE)
+        Cyy_tyee = np.reshape(Cyy_tyee,(Cyy_tyee.shape[0],1,Cyy_tyee.shape[1],Cyy_tyee.shape[2]))
+    Cyy_yetet = np.zeros((Cyy_tyee.shape[-3],Cyy_tyee.shape[-2],Cyy_tyee.shape[-4],Cyy_tyee.shape[-2],Cyy_tyee.shape[-4]),dtype=Cyy_tyee.dtype) # (nY,nE,tau,nE,tau)
+    # fill in the block diagonal entries
+    for i in range(Cyy_tyee.shape[-4]):
+        Cyy_yetet[...,:,i,:,i] = Cyy_tyee[0,:,:,:]
+        for j in range(i+1,Cyy_tyee.shape[-4]):
+            Cyy_yetet[...,:,i,:,j] = Cyy_tyee[j-i,:,:,:]
+            Cyy_yetet[...,:,j,:,i] = Cyy_tyee[j-i,:,:,:].swapaxes(-2,-1) # transpose the event types
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     if Cyy_tyee.ndim==3: # ( 1,nE,tau,nE,tau) -> (nE,tau,nE,tau)
         Cyy_yetet = Cyy_yetet[0,...]
     return Cyy_yetet
@@ -354,6 +429,7 @@ def compCxx_diag(X_TSd, tau:float, offset:float=0, unitnorm:bool=True, center:bo
     if X_TSd.ndim == 2:  # ensure is 3-d
         X_TSd = X_TSd[np.newaxis, ...] 
 
+<<<<<<< HEAD
     if False:
         # temporal embedding
         X_TStd = window_axis(X_TSd, winsz=tau, axis=-2)
@@ -369,17 +445,36 @@ def compCxx_diag(X_TSd, tau:float, offset:float=0, unitnorm:bool=True, center:bo
         for t in range(1,tau): # manually slide over Y -- as einsum doesn't manage the memory well
             Cxx_tdd[t,...] = np.einsum('TSd,TSe->de',X_TSd[:,t:,...],X_TSd[:,:-t,...])
 
+=======
+    # temporal embedding
+    X_TStd = window_axis(X_TSd, winsz=tau, axis=-2)
+    # shrink X w.r.t. the window and shift to align with the offset
+    #X_TSd = X_TSd[:, tau-1:, ...] # shift fowards and shrink
+    X_TSd = X_TSd[:, :X_TStd.shape[-3], ...] # shift fowards and shrink
+    # compute the cross-covariance
+    MM = np.einsum("TStd, TSe->tde", X_TStd, X_TSd, dtype=X_TSd.dtype)
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     if center:
         N = X_TSd.shape[0]*X_TSd.shape[1]
         sX = np.sum(X_TSd.reshape((N,X.shape[-1])),axis=0)
         muXX = np.einsum("i,j->ij",sX,sX) / N
+<<<<<<< HEAD
         Cxx_tdd = Cxx_tdd - muXX
+=======
+        MM = MM - muXX
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     if unitnorm:
         # normalize so the resulting constraint on the estimated signal is that it have
         # average unit norm
+<<<<<<< HEAD
         Cxx_tdd = Cxx_tdd / (X_TSd.shape[0]*X_TSd.shape[1]) # / nTrl*nEp
     return Cxx_tdd
+=======
+        MM = MM / (X_TSd.shape[0]*X_TSd.shape[1]) # / nTrl*nEp
+    return MM
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 def compCxx_full(X_TSd, tau:float, offset=0, unitnorm:bool=False, center:bool=False):
     '''
@@ -422,6 +517,7 @@ def compCxx_full(X_TSd, tau:float, offset=0, unitnorm:bool=False, center:bool=Fa
     return Cxx_fdfd
 
 def Cxx_diag2full(Cxx_tdd):
+<<<<<<< HEAD
     """ convert compressed cross-auto-cov representation to a full one
 
     Args:
@@ -430,6 +526,8 @@ def Cxx_diag2full(Cxx_tdd):
     Returns:
         Cxx_tdtd: the fully completed version
     """    
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     MM = np.zeros((Cxx_tdd.shape[0],Cxx_tdd.shape[1],Cxx_tdd.shape[0],Cxx_tdd.shape[2]), dtype=Cxx_tdd.dtype)
     for t1 in range(Cxx_tdd.shape[0]):
         for t2 in range(Cxx_tdd.shape[0]):
@@ -502,7 +600,10 @@ def compCyx_diag(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
     X_TSd (nTrl, nSamp, d):  raw response for the current stimulus event
             d=#electrodes
     Y_TSye (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
+<<<<<<< HEAD
       OR Y_TSy : per-output sequence
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
     Returns:
         Cyx_tyed (nY, nE, tau, d): cross covariance at different offsets
@@ -510,14 +611,20 @@ def compCyx_diag(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
     '''
     if X_TSd.ndim == 2: 
         X_TSd = X_TSd[np.newaxis, ...] 
+<<<<<<< HEAD
         Y_TSye = Y_TSye[np.newaxis, ...]
     if Y_TSye.ndim == 3: # add feature dim if needed
         Y_TSye = Y_TSye[...,np.newaxis] 
+=======
+    if Y_TSye.ndim == 3:
+        Y_TSye = Y_TSye[np.newaxis, ...] 
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     if verb > 1: print("tau={}".format(tau))
     if not hasattr(tau,'__iter__'): tau=(0,tau)
     if offset is None : offset = 0
     if not hasattr(offset,'__iter__'): offset=(0,offset)
 
+<<<<<<< HEAD
     # TODO[]: optimized version for self-computation
     if X_TSd is Y_TSye : # same input
         pass
@@ -536,6 +643,21 @@ def compCyx_diag(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
 
         elif t > 0: # shift X backwards -> Y preceeds X
             Cyx_tyed[i,...] = np.einsum('TS...,TSd->...d',Y_TSye[:,:-t,:,:],X_TSd[:,t:,:])
+=======
+    # work out a single shift-length for shifting X
+    taus = list(range(-(offset[0] + tau[0]-1 - offset[1]), (offset[1] + tau[1]-1 - offset[0])+1))
+
+    MM = np.zeros((len(taus),Y_TSye.shape[-2],Y_TSye.shape[-1],X_TSd.shape[-1]),dtype=X_TSd.dtype)
+    for i,t in enumerate(taus):
+        if t < 0 : # shift Y backwards -> X preceeds Y
+            MM[i,...] = np.einsum('TSye,TSd->yed',Y_TSye[:,-t:,:,:],X_TSd[:,:t,:])
+
+        elif t == 0 : # aligned
+            MM[i,...] = np.einsum('TSye,TSd->yed',Y_TSye,X_TSd)
+
+        elif t > 0: # shift X backwards -> Y preceeds X
+            MM[i,...] = np.einsum('TSye,TSd->yed',Y_TSye[:,:-t,:,:],X_TSd[:,t:,:])
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     if center:
         if verb > 1: print("center")
@@ -543,15 +665,25 @@ def compCyx_diag(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
         muX = np.mean(X_TSd,axis=(0,1)) 
         muY = np.sum(Y_TSye,(0,1))
         muXY_yed= np.einsum("ye,d->yed",muY,muX) 
+<<<<<<< HEAD
         Cyx_tyed = Cyx_tyed - muXY_yed[np.newaxis,...] #(nY,nE,tau,d)
+=======
+        MM = MM - muXY_yed[np.newaxis,...] #(nY,nE,tau,d)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     if unitnorm:
         # normalize so the resulting constraint on the estimated signal is that it have
         # average unit norm
+<<<<<<< HEAD
         Cyx_tyed = Cyx_tyed / (Y_TSye.shape[0]*Y_TSye.shape[1]) # / nTrl*nEp
     
     return Cyx_tyed, taus
 
+=======
+        MM = MM / (Y_TSye.shape[0]*Y_TSye.shape[1]) # / nTrl*nEp
+    
+    return MM, taus
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 def compCyx_full(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitnorm=True):
     '''
@@ -576,6 +708,10 @@ def compCyx_full(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
     assert center==False
     assert offset==(0,0)
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     # loopy computation
     Cyx_tyefd = np.zeros((tau[1],Y_TSye.shape[-2],Y_TSye.shape[-1],tau[0],X_TSd.shape[-1]), dtype=X_TSd.dtype)
     for f in range(tau[0]): # backwards shift X
@@ -605,6 +741,7 @@ def compCyx_full(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
     return Cyx_tyefd
 
 def Cyx_diag2full(Cyx_tyed,tau,offset=None):
+<<<<<<< HEAD
     """ convert compressed cross-auto-cov representation to full one
 
     Args:
@@ -615,6 +752,8 @@ def Cyx_diag2full(Cyx_tyed,tau,offset=None):
     Returns:
         Cyx_tyefd: t x f inflated representation
     """    
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     if not hasattr(tau,'__iter__'): tau=(0,tau)
     assert offset is None or offset == 0 
 
@@ -984,7 +1123,11 @@ def crossautocov(X, Y, tau, offset=0, per_trial:bool=False, verb:int=0):
     return Ctdtd
 
 def plot_summary_statistics(Cxx_dd, Cyx_yetd, Cyy_yetet, 
+<<<<<<< HEAD
                             evtlabs=None, outputs=None, times=None, ch_names=None, fs=None, offset:int=0, label:str=None):
+=======
+                            evtlabs=None, outputs=None, times=None, ch_names=None, fs=None, label:str=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """Visualize the summary statistics (Cxx_dd, Cyx_yetd, Cyy) of a dataset
 
     It is assumed the data has 'd' channels, with 'nE' different types of
@@ -1001,7 +1144,11 @@ def plot_summary_statistics(Cxx_dd, Cyx_yetd, Cyy_yetet,
     """    
     import matplotlib.pyplot as plt
     if times is None:
+<<<<<<< HEAD
         times = np.arange(Cyx_yetd.shape[-2]) + offset
+=======
+        times = np.arange(Cyx_yetd.shape[-2])
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         if fs is not None:
             times = times / fs
     if ch_names is None:
@@ -1039,6 +1186,7 @@ def plot_summary_statistics(Cxx_dd, Cyx_yetd, Cyy_yetet,
         # TODO []: use the ch_names, times to add lables to the  axes
         plt.imshow(Cyx_yetd[ei, :, :].T, aspect='auto', origin='lower', extent=(times[0], times[-1], 0, Cyx_yetd.shape[-1]))
         plt.clim(clim)
+<<<<<<< HEAD
         try:
             if nevt>1 and nout>1:
                 title = '{}:{}'.format(outputs[ei//nevt],evtlabs[ei%nevt])
@@ -1051,6 +1199,17 @@ def plot_summary_statistics(Cxx_dd, Cyx_yetd, Cyy_yetet,
             plt.title(title)
         except:
             pass
+=======
+        if nevt>1 and nout>1:
+            title = '{}:{}'.format(outputs[ei//nevt],evtlabs[ei%nevt])
+        elif nevt==1:
+            title = '{}'.format(outputs[ei] if outputs else None)
+        elif nout==1:
+            title = '{}'.format(evtlabs[ei] if evtlabs else None)
+        else:
+            title=[]
+        plt.title(title)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     # only last one has colorbar
     plt.colorbar()
 
@@ -1081,7 +1240,11 @@ def plotCxy(Cyx_yetd,evtlabs=None,fs=None):
 
 def plot_trial(X_TSd,Y_TSy,fs:float=None,
                 ch_names=None,evtlabs=None,outputs=None,times=None, 
+<<<<<<< HEAD
                 ylabel:str='ch + output', suptitle:str=None, show:bool=None):
+=======
+                ylabel:str='ch + output', suptitle:str=None, block:bool=False):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """visualize a single trial with data and stimulus sequences
 
     Args:
@@ -1091,6 +1254,7 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
         ch_names (list-of-str, optional): channel names for X. Defaults to None.
     """    
     import matplotlib.pyplot as plt
+<<<<<<< HEAD
     # if X_TSd.shape[1]==1:
     #     print("Warning: data with no samples?  colapsed")
     #     X_TSd=X_TSd[:,0,...]
@@ -1107,6 +1271,14 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
     if ch_names is None and X_TSd is not None: ch_names = np.arange(X_TSd.shape[2],dtype=int)
     if outputs is None and not Y_TSy is None:  outputs  = np.arange(Y_TSy.shape[2])
     if evtlabs is None and not Y_TSy is None and Y_TSy.ndim>=4: evtlabs  = np.arange(np.prod(Y_TSy.shape[3:]))
+=======
+    if X_TSd.ndim==2 : X_TSd=X_TSd[np.newaxis,...]
+    if not Y_TSy is None and Y_TSy.ndim==2 : Y_TSy=Y_TSy[np.newaxis,...]
+    times = np.arange(X_TSd.shape[1])/fs if fs is not None else np.arange(X_TSd.shape[1])
+    if ch_names is None: ch_names = np.arange(X_TSd.shape[-1],dtype=int)
+    if outputs is None and not Y_TSy is None:  outputs  = np.arange(Y_TSy.shape[-1 if Y_TSy.ndim==3 else -2])
+    if evtlabs is None and not Y_TSy is None and Y_TSy.ndim==4: evtlabs  = np.arange(Y_TSy.shape[-1])
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     # strip unused outputs to simplify plot
     if not Y_TSy is None :
         if Y_TSy.ndim < 4:
@@ -1114,6 +1286,7 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
         else:
             Y_TSy=Y_TSy[...,np.any(Y_TSy,axis=tuple(range(Y_TSy.ndim-2))+(-1,)),:]
 
+<<<<<<< HEAD
     #print(Y_TSy.shape)
     linespace = 2 #np.mean(np.abs(X_TSd[X_TSd!=0]))*2
     for i in range(ntrl):
@@ -1157,6 +1330,32 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
                         evt = evtlabs[e] if evtlabs is not None and e < len(evtlabs) else e
                         tmp = Y_TSy[i,...,y,e] / np.max(Y_TSy)
                         plt.plot(times[:trlen],tmp.ravel()+y+nd*linespace+2+e+y*Y_TSy.shape[2],'.-',label='Y {}:{}'.format(out,evt))
+=======
+    print(Y_TSy.shape)
+    linespace = 2 #np.mean(np.abs(X_TSd[X_TSd!=0]))*2
+    for i in range(X_TSd.shape[0]):
+        plt.subplot(X_TSd.shape[0],1,i+1)
+        trlen = np.flatnonzero(np.any(X_TSd[i,...],-1))[-1]
+        for c in range(X_TSd.shape[-1]):
+            tmp = X_TSd[i,...,c]
+            tmp = tmp[...,:trlen]
+            tmp = (tmp - np.mean(tmp.ravel())) / max(1,np.std(tmp[tmp!=0].ravel())) / 2
+            lab = ch_names[c] if c < len(ch_names) else c
+            plt.plot(times[:trlen],tmp+c*linespace,label='X {}'.format(lab))
+
+        if Y_TSy is not None:
+            if Y_TSy.ndim==3:
+                for y in range(Y_TSy.shape[-1]):
+                    tmp = Y_TSy[i,...,y] / np.max(Y_TSy)
+                    plt.plot(times,tmp+y+X_TSd.shape[-1]*linespace+2,'.-',label='Y {}'.format(y))
+            elif Y_TSy.ndim==4:
+                for y in range(Y_TSy.shape[-2]):
+                    out = outputs[y] if y < len(outputs) else y
+                    for e in range(Y_TSy.shape[-1]):
+                        evt = evtlabs[e] if e < len(evtlabs) else e
+                        tmp = Y_TSy[i,...,y,e] / np.max(Y_TSy)
+                        plt.plot(times,tmp+y+X_TSd.shape[-1]*linespace+2+e,'.-',label='Y {}:{}'.format(out,evt))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
         plt.title('Trl {}'.format(i))
         plt.grid(True)
@@ -1165,15 +1364,24 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
     plt.legend()
     if suptitle:
         plt.suptitle(suptitle)
+<<<<<<< HEAD
     if show is not None: plt.show(block=show)
 
 
 def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch_names=None, 
              axis:int=-1, plottype='plot', offset:int=0, ylim=None, suptitle:str=None, show:bool=None):
+=======
+    plt.show(block=block)
+
+
+def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None, 
+             axis=-1, plottype='plot', offset=0, ylim=None, suptitle:str=None, block:bool=False):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     '''
     Make a multi-plot of the event ERPs (as stored in erp)
     erp = (nY, nE, tau, d) current per output ERPs
     '''
+<<<<<<< HEAD
 
     # ensure 4-d
     if erp_yetd.ndim<4:
@@ -1182,6 +1390,10 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
     nevt = erp_yetd.shape[1] if erp_yetd.ndim>2 else 1
     nout = erp_yetd.shape[0] if erp_yetd.ndim>3 else 1
 
+=======
+    nevt = erp.shape[-3]
+    nout = erp.shape[-4] if erp.ndim>3 else 1
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     if outputs is None:
         outputs = ["{}".format(i) for i in range(nout)]
     if evtlabs is None:
@@ -1190,6 +1402,7 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
         times = list(range(offset,erp_yetd.shape[2]+offset))
         if fs is not None:
             times = [ t/fs for t in times ]
+<<<<<<< HEAD
 
     if ch_names is None:
         ch_names = ["{}".format(i) for i in range(erp_yetd.shape[-1])]
@@ -1213,15 +1426,36 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
             ch_names = '?'
         else:
             times = list(range(erp_etd.shape[1]))
+=======
+    if ch_names is None:
+        ch_names = ["{}".format(i) for i in range(erp.shape[-1])]
+
+    if erp.ndim > 3:
+        if erp.shape[0]>1 :
+            print("Multiple Y's merged!")
+        erp = erp.reshape((-1,erp.shape[-2],erp.shape[-1]))
+        # update evtlabs with the outputs info
+        if nevt>1 and nout>1:
+            evtlabs = [ "{}:{}".format(o,e) for o in outputs for e in evtlabs]
+        elif nevt==1 and nout>1:
+            evtlabs = outputs
+    elif erp.ndim == 2:
+        erp = erp[np.newaxis,...]
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     icoords = evtlabs
     jcoords = times
     kcoords = ch_names 
     if axis<0:
+<<<<<<< HEAD
         axis = erp_etd.ndim+axis
     clim = [np.nanmedian(np.nanmin(erp_etd,axis=(1,2))), np.nanmedian(np.nanmax(erp_etd,axis=(1,2)))]
     if clim[0]==clim[1]: clim=[-1,1]
     if any(np.isnan(clim)) or any(np.isinf(clim)): clim=None
+=======
+        axis = erp.ndim+axis
+    clim = [np.min(erp.flat), np.max(erp.flat)]
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     import matplotlib.pyplot as plt
 
     # print("erp_etd={}".format(erp_etd.shape))
@@ -1262,6 +1496,7 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
         # make the plot of the desired type
         if plottype == 'plot':
             for li in range(A.shape[0]):
+<<<<<<< HEAD
                 pl.plot(ycoords, A[li, :], '.-', label=xcoords[li] if li<len(xcoords) else None, markersize=1, linewidth=1)
             if clim: 
                 plt.ylim(clim)
@@ -1279,11 +1514,28 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
             pl.set_yticks(np.arange(len(xcoords)));pl.set_yticklabels(xcoords)
             if clim:
                 img.set_clim(clim)
+=======
+                pl.plot(ycoords, A[li, :], '.-', label=xcoords[li], markersize=1, linewidth=1)
+            if ylim: plt.ylim(ylim)
+            pl.grid(True)
+        elif plottype == 'plott':
+            for li in range(A.shape[1]):
+                pl.plot(xcoords, A[:, li], '.-', label=ycoords[li], markersize=1, linewidth=1)
+            if ylim: plt.ylim(ylim)
+            pl.grid(True)
+        elif plottype == 'imshow':
+            # TODO[] : add the labels to the rows
+            img=pl.imshow(A, aspect='auto')#,extent=[times[0],0,times[-1],erp.shape[-3]])
+            pl.set_xticks(np.arange(len(ycoords)));pl.set_xticklabels(ycoords)
+            pl.set_yticks(np.arange(len(xcoords)));pl.set_yticklabels(xcoords)
+            img.set_clim(clim)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         pl.title.set_text("{}".format(pltcoords[ci] if ci<len(pltcoords) else ci))
     # legend only in the last plot
     pl.legend()
     if suptitle:
         plt.suptitle(suptitle)
+<<<<<<< HEAD
     if show is not None:
         plt.show(block=show)
 
@@ -1373,6 +1625,22 @@ def topoplots(A,ch_names=None, ch_pos=None, axs=None, nrows=None, ncols=None, le
 def plot_spatial_components(A,ch_names=None,ncols=2,nrows=None,ch_pos=None,channel_labels=True,colorbar=True,normalize:bool=False):
     import matplotlib.pyplot as plt
     A=A.copy()
+=======
+    if block is not None:
+        plt.show(block=block)
+
+
+def plot_factoredmodel(A, R, S=None, 
+                        evtlabs=None, times=None, ch_names=None, ch_pos=None, fs=None, 
+                        offset_ms=None, offset=None, spatial_filter_type="Filter", label=None, ncol=2):
+    '''
+    Make a multi-plot of a factored model
+    A_kd = k components and d sensors
+    R_ket = k components, e events, tau samples response-duration
+    '''
+    A=A.copy()
+    R=R.copy()
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     if A.ndim > 2:
         if A.shape[0]>1 :
             print("Warning: multiple filters ploted at once")
@@ -1380,6 +1648,7 @@ def plot_spatial_components(A,ch_names=None,ncols=2,nrows=None,ch_pos=None,chann
     if A.ndim < 2:
         A = A[np.newaxis, :]
 
+<<<<<<< HEAD
     if nrows==None: nrows=A.shape[0]
 
     if ch_pos is None and ch_names is not None:
@@ -1390,6 +1659,24 @@ def plot_spatial_components(A,ch_names=None,ncols=2,nrows=None,ch_pos=None,chann
             else:
                 ch_names=None
     if not ch_names is None:
+=======
+    if times is None:
+        times = np.arange(R.shape[-1])
+        if offset is not None:
+            times = times + offset
+        if fs is not None:
+            times = times / fs
+        if offset_ms is not None:
+            times = times + offset_ms/1000
+    if ch_names is not None:
+        if not len(ch_names) == A.shape[-1]:
+            print("Warning: channel names don't match dimension size!")
+            if len(ch_names)>A.shape[-1]:
+                ch_names=ch_names[:A.shape[-1]]
+            else:
+                ch_names=None
+    if ch_pos is None and not ch_names is None:
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         # try to load position info from capfile
         try: 
             print("trying to get pos from cap file!")
@@ -1406,12 +1693,24 @@ def plot_spatial_components(A,ch_names=None,ncols=2,nrows=None,ch_pos=None,chann
             pass
     if ch_names is None:
         ch_names = np.arange(A.shape[-1])
+<<<<<<< HEAD
 
 
     cRng= np.max(np.abs(A.reshape((-1))))
     levels = np.linspace(-cRng,cRng,20)
+=======
+    if evtlabs is None:
+        evtlabs = np.arange(R.shape[-2])
+        
+    import matplotlib.pyplot as plt
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     # plot per component
+<<<<<<< HEAD
+=======
+    ncols = ncol #int(np.ceil(np.sqrt(A.shape[0])))
+    nrows = A.shape[0] #int(np.ceil(A.shape[0]/ncols))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     # start at the bottom to share the axis
     for ci in range(A.shape[0]):
         # make the axis
@@ -1420,6 +1719,7 @@ def plot_spatial_components(A,ch_names=None,ncols=2,nrows=None,ch_pos=None,chann
             axA = plt.subplot(nrows, ncols, subploti+1) # share limits
             axA.set_xlabel("Space")
             pA = axA
+<<<<<<< HEAD
             channel_label = channel_labels
         else: # normal plot
             pA = plt.subplot(nrows, ncols, subploti+1, sharex=axA, sharey=axA) 
@@ -1473,6 +1773,47 @@ def plot_temporal_components(R,fs=1,ncols=2,nrows=None,normalize=False):
             pR.grid(True)
             pR.tick_params(axis='both',which='both',bottom=False, left=False, labelbottom=False,labelleft=False) # no labels
 
+=======
+        else: # normal plot
+            pA = plt.subplot(nrows, ncols, subploti+1, sharex=axA, sharey=axA) 
+            plt.tick_params(labelbottom=False,labelleft=False) # no labels
+
+        # make the spatial plot
+        sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.abs(R[ci,...]))]) # normalize directions
+        if not ch_pos is None: # make as topoplot
+            cRng= np.max(np.abs(A.reshape((-1))))
+            levels = np.linspace(-cRng,cRng,20)
+            tt=pA.tricontourf(ch_pos[:,0],ch_pos[:,1],A[ci,:]*sign,levels=levels,cmap='Spectral')
+            # BODGE: deal with co-linear inputs by replacing each channel with a triangle of points
+            #interp_pos = np.concatenate((ch_pos+ np.array((0,.1)), ch_pos + np.array((-.1,-.05)), ch_pos + np.array((+.1,-.05))),0)
+            #tt=pA.tricontourf(interp_pos[:,0],interp_pos[:,1],np.tile(W[ri,:]*sgn,3),levels=levels,cmap='Spectral')
+            for i,n in enumerate(ch_names):
+                #pA.plot(ch_pos[i,0],ch_pos[i,1],'.',markersize=5) # marker
+                pA.text(ch_pos[i,0],ch_pos[i,1],n,ha='center',va='center') # label
+            pA.set_aspect(aspect='equal')
+            pA.set_frame_on(False) # no frame
+            plt.tick_params(labelbottom=False,labelleft=False,which='both',bottom=False,left=False) # no labels, ticks
+            plt.colorbar(tt)
+        else:
+            pA.plot(ch_names,A[ci,:]*sign,'.-')
+            pA.grid(True)
+
+        pA.title.set_text("Spatial {} #{}".format(spatial_filter_type,ci))
+
+    # plot temmporal components
+    for ci in range(R.shape[0]):
+        # make the axis
+        subploti=(nrows-1-ci)*ncols
+        if ci==0: # common axis plot
+            axR = plt.subplot(nrows, ncols, subploti+2) # share limits
+            axR.set_xlabel("time (s)")
+            axR.grid(True)
+            pR = axR
+        else: # normal plot
+            pR = plt.subplot(nrows, ncols, subploti+2, sharex=axR, sharey=axR) 
+            pR.grid(True)
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.abs(R[ci,...]))]) # normalize directions
         # make the temporal plot, with labels, N.B. use loop so can set each lines label
 
@@ -1694,6 +2035,7 @@ def plot_factoredmodel(A, R, S=None,
         # TODO[]: get and only set for the tick locations!
         #axA.set_xticklabels(ch_names,rotation=65)
         pass
+<<<<<<< HEAD
     if suptitle:
         plt.suptitle(suptitle)
     if show is not None:
@@ -1704,6 +2046,13 @@ def plot_factoredmodel(A, R, S=None,
 
 
 def plot_subspace(X_TSfd, Y_TSye, W_kd, R_ket, S_y, f_f, offset:int=0, fs:float=100, show:bool=False, label:str=None):
+=======
+    if label:
+        plt.suptitle(label)
+
+
+def plot_subspace(X_TSfd, Y_TSye, W_kd, R_ket, S_y, f_f, offset:int=0, fs:float=100, block:bool=False, label:str=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """ plot the subspace source activity of a fwd-bwd model
 
     Args:
@@ -1715,7 +2064,11 @@ def plot_subspace(X_TSfd, Y_TSye, W_kd, R_ket, S_y, f_f, offset:int=0, fs:float=
         f_f ([type]): [description]
         offset (int, optional): [description]. Defaults to 0.
         fs (float, optional): [description]. Defaults to 100.
+<<<<<<< HEAD
         show (bool, optional): [description]. Defaults to False.
+=======
+        block (bool, optional): [description]. Defaults to False.
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         label (str, optional): [description]. Defaults to None.
     """
     if W_kd.ndim==3:
@@ -1740,7 +2093,11 @@ def plot_subspace(X_TSfd, Y_TSye, W_kd, R_ket, S_y, f_f, offset:int=0, fs:float=
     elif offset>0:
         Yr_TSyk[:,R_ket.shape[-1]-1+offset:,:] = tmp[:,:-offset,:]
 
+<<<<<<< HEAD
     plot_trial(wXf_TSk, Yr_TSyk, fs=fs, show=show, ylabel="g(X) g(Y)", suptitle="sub_space {}".format(label))
+=======
+    plot_trial(wXf_TSk, Yr_TSyk, fs=fs, block=block, ylabel="g(X) g(Y)", suptitle="sub_space {}".format(label))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 
 def testSlicedvsContinuous():
@@ -1933,9 +2290,12 @@ def testCases():
 
     
 if __name__=="__main__":
+<<<<<<< HEAD
 
     topoplots(np.random.standard_normal((5,8)),ch_names=['FPz','C3','Cz','C4','CP3','CPz','CP4','Pz'])
 
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     test_compCyx_diag()
     testComputationMethods()
     testCases()

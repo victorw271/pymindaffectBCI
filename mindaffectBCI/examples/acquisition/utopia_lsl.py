@@ -93,11 +93,14 @@ def run (host=None, streamtype:str='EEG', channels:list=None, **kwargs):
     print("Putting header.")
     client.sendMessage(utopiaclient.DataHeader(None, fSample, nstream, ch_stream))
 
+<<<<<<< HEAD
     # log the config
     import json
     configmsg = json.dumps(dict(component=__file__, args=dict(host=host, streamtype=streamtype, channels=channels, **kwargs)))
     client.sendMessage(utopiaclient.Log(None, configmsg))
 
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     maxpacketsamples = int(32000 / 4 / nch)
     nSamp=0
     nBlock=0
@@ -131,8 +134,15 @@ def run (host=None, streamtype:str='EEG', channels:list=None, **kwargs):
         printLog(nSamp,nBlock)        
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     print("Note: to start a test-lsl stream use: python -m pylsl.examples.SendDataAdvanced")
 
     channels=['Cz' ,'C3']
     channels=[0,1,2,5,6]
     run(channels=channels)
+=======
+    print("To start a debug data stream use in console: python -m pylsl.examples.SendData")
+    channels=['Cz' ,'C3']
+    channels=[0,1,2,5,6]
+    run(channels=channels)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a

@@ -1,5 +1,9 @@
 #  Copyright (c) 2019 MindAffect B.V. 
+<<<<<<< HEAD
 #  Author: Jason Farquhar <jadref@gmail.com>
+=======
+#  Author: Jason Farquhar <jason@mindaffect.nl>
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -18,6 +22,7 @@
 import glob
 import os
 import numpy as np
+<<<<<<< HEAD
 import sys
 import mindaffectBCI.decoder.stim2event
 from mindaffectBCI.decoder.analyse_datasets import debug_test_dataset, analyse_dataset, analyse_datasets
@@ -120,12 +125,76 @@ if __name__=='__main__':
         print("problem saving the scores..")
 
     quit()
+=======
+from mindaffectBCI.decoder.analyse_datasets import debug_test_dataset, analyse_dataset, analyse_datasets
+from mindaffectBCI.decoder.offline.load_mindaffectBCI  import load_mindaffectBCI
+from mindaffectBCI.decoder.timestamp_check import timestampPlot
+import matplotlib.pyplot as plt
+
+# last file saved to default save location
+savefile = os.path.join(os.path.dirname(os.path.abspath(__file__)),'../../logs/mindaffectBCI*.txt')
+
+#savefile = '~/Desktop/mark/mindaffectBCI*1531_linux.txt'
+#savefile = '~/Desktop/khash/mindaffectBCI*1531_linux.txt'
+savefile = '~/Desktop/rpi/mindaffectBCI*.txt'
+#savefile = '~/Desktop/mark/mindaffectBCI_brainflow_android_200916_1148.txt' # p-val bug
+#savefile = '~/Desktop/mark/mindaffectBCI_noisetag_bci_*1319_ganglion.txt' # score bug
+
+savefile = '~/Downloads/mindaffectBCI*.txt'
+
+# get the most recent file matching the savefile expression
+files = glob.glob(os.path.expanduser(savefile)); 
+savefile = max(files, key=os.path.getctime)
+
+# load
+X, Y, coords = load_mindaffectBCI(savefile, stopband=((45,65),(5.5,25,'bandpass')), order=6, ftype='butter', fs_out=100)
+# output is: X=eeg, Y=stimulus, coords=meta-info about dimensions of X and Y
+print("EEG: X({}){} @{}Hz".format([c['name'] for c in coords],X.shape,coords[1]['fs']))
+print("STIMULUS: Y({}){}".format([c['name'] for c in coords[:1]]+['output'],Y.shape))
+
+# train *only* on 1st 10 trials
+score, dc, Fy, clsfr, cvres = debug_test_dataset(X, Y, coords,
+                        test_idx=slice(10,None), tau_ms=450, evtlabs=('fe','re'), rank=1, model='cca', ranks=(1,2,3,5), prediction_offsets=(0))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
+
+#score, dc, Fy, clsfr, cvres = analyse_dataset(X, Y, coords,
+#                        test_idx=slice(10,None), tau_ms=450, evtlabs=('fe','re'), rank=1, model='cca', ranks=(1,2,3,5))
 
 
+# test the auto-offset compensation
+from mindaffectBCI.decoder.scoreOutput import scoreOutput,  plot_Fy
+Fe = clsfr.transform(X)
+Ye = clsfr.stim2event(Y)
+    
+# score all trials with shifts
+offsets=[-2,-1,0,1,2] # set offsets to test
+prior=np.array([.3,.7,1,.5,.2]) # prior over offsets
+Fyo = scoreOutput(Fe,Ye, offset=offsets, dedup0=True)
+print("{}".format(Fyo.shape))
+for i,o in enumerate(offsets):
+    plt.figure()
+    plot_Fy(Fyo[i,...],maxplots=50,label="{}\noffset {}".format(savefile,o))
+    plt.show(block=False)
+
+from mindaffectBCI.decoder.zscore2Ptgt_softmax import zscore2Ptgt_softmax
+from mindaffectBCI.decoder.normalizeOutputScores import normalizeOutputScores
+# try auto-model-id in the Pval computation:
+ssFyo,scale_sFy,N,_,_=normalizeOutputScores(Fyo.copy(),minDecisLen=-1,nEpochCorrection=100, priorsigma=(clsfr.sigma0_,clsfr.priorweight))
+plot_Fy(np.squeeze(ssFyo[:,0,...]),cumsum=False, label="{} Trl={}".format(savefile,0))
+plt.show()
+Ptgt=zscore2Ptgt_softmax(ssFyo,clsfr.softmaxscale_,prior=prior.reshape((-1,1,1,1)),marginalizemodels=True, marginalizedecis=False) # (nTrl,nEp,nY)
+plot_Fy(Ptgt, cumsum=False,maxplots=50,label=savefile)
+
+<<<<<<< HEAD
     # score, dc, Fy, clsfr, rawFy = debug_test_dataset(X, Y, coords,
     #                          test_idx=test_idx, cv=cv, tau_ms=450, evtlabs=evtlabs, model='cca', 
     #                          ranks=(1,2,3,5,10), prediction_offsets=(0), priorweight=200, startup_correction=50, 
     #                          bwdAccumulate=False, minDecisLen=0, reg=(1e-8,1e-2))
+=======
+# do a time-stamp check.
+plt.clf()
+timestampPlot(savefile)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     ## Manually test different thresholds
     # thresholds = np.unique(Y.ravel())
@@ -142,6 +211,7 @@ if __name__=='__main__':
     #     print(" Goodness-of-fit : {}".format(gofs[-1]))
     #     dcs.append(res[1])
 
+<<<<<<< HEAD
     # from mindaffectBCI.decoder.decodingCurveSupervised import print_decoding_curve, plot_decoding_curve, flatten_decoding_curves
     # int_len, prob_err, prob_err_est, se, st = flatten_decoding_curves(dcs)
     # print("Ave-DC\n{}\n".format(print_decoding_curve(np.nanmean(int_len,0),np.nanmean(prob_err,0),np.nanmean(prob_err_est,0),np.nanmean(se,0),np.nanmean(st,0))))
@@ -190,5 +260,10 @@ if __name__=='__main__':
     # sigq=testElectrodeQualities(X,fs=200)
     # plt.clf();plt.plot(sigq)
     plt.show()
+=======
+# sigq=testElectrodeQualities(X,fs=200)
+# plt.clf();plt.plot(sigq)
+plt.show()
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 

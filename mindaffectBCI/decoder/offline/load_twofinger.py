@@ -5,7 +5,11 @@ from mindaffectBCI.decoder.utils import block_randomize, butter_sosfilt, upsampl
 
 marker2stim=dict(lh=(1,3),rh=(2,4))
 
+<<<<<<< HEAD
 def load_twofinger(datadir, sessdir=None, sessfn=None, fs_out=60, filterband=((45,65),(0,1),(25,-1)), subtriallen=10, nvirt=20, verb=0, ch_idx=slice(32)):
+=======
+def load_twofinger(datadir, sessdir=None, sessfn=None, fs_out=60, stopband=((45,65),(0,1),(25,-1)), subtriallen=10, nvirt=20, verb=0, ch_idx=slice(32)):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     
     # load the data file
     Xfn = datadir
@@ -99,7 +103,11 @@ def testcase():
         sessfn = sys.argv[1]
  
     from load_twofinger import load_twofinger
+<<<<<<< HEAD
     oX, oY, coords = load_twofinger(sessfn, fs_out=60)
+=======
+    oX, oY, coords = load_twofinger(sessfn, fs_out=60, nsubtrials=40)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     times = coords[1]['coords']
     fs = coords[1]['fs']
     ch_names = coords[2]['coords']

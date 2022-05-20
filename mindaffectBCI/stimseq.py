@@ -24,6 +24,7 @@ pydir = os.path.dirname(os.path.abspath(__file__))
 savedir = os.path.join(pydir,'stimulus_sequence') if os.path.isdir(os.path.join(pydir,'stimulus_sequence')) else pydir
 
 class StimSeq :
+<<<<<<< HEAD
     def __init__(self,st=None,ss=None,es=None):
         """class which holds a stimulus-sequence, i.e. an (nobjects, ntimepoints) sequence describing the state of all objects at each time point.
 
@@ -37,6 +38,32 @@ class StimSeq :
 
         self.stimSeq     = ss if not isinstance(ss,np.ndarray) else ss.tolist()
         # (n_timepoints, n_objects) stimulus code for each time point for each stimulus
+=======
+    """[summary]
+
+    Raises:
+        Exception: [description]
+        Exception: [description]
+
+    Returns:
+        [type]: [description]
+    """    
+
+    stimSeq     = None # [ nEvent x nSymb ] stimulus code for each time point for each stimulus
+    stimTime_ms = None # time stim i ends, i.e. stimulus i is on screen from stimTime_ms[i-1]-stimTime_ms[i]
+    eventSeq    = None # events to send at each stimulus point
+
+    def __init__(self,st=None,ss=None,es=None):
+        """[summary]
+
+        Args:
+            st ([type], optional): [description]. Defaults to None.
+            ss ([type], optional): [description]. Defaults to None.
+            es ([type], optional): [description]. Defaults to None.
+        """        
+
+        self.stimSeq     = ss
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         self.stimTime_ms = st
         # (n_timepoints,) **IGNORED** time in milliseconds at which a stimulus event takes place, i.e. stimulus i is on screen from stimTime_ms[i-1]-stimTime_ms[i]
         self.eventSeq    = es
@@ -44,6 +71,12 @@ class StimSeq :
         
 
     def __str__(self):
+        """[summary]
+
+        Returns:
+            [type]: [description]
+        """        
+
         res = "#stimTimes: ";
         if not self.stimTime_ms is None:
             res += "(1," + str(len(self.stimTime_ms)) + ")\n"
@@ -65,6 +98,7 @@ class StimSeq :
         res+="\n\n"
         return res
 
+<<<<<<< HEAD
     def plot(self,show=None,title=None, xlim=None, ylim=None):
         """plot the stimulus sequence as a multi-line plot
 
@@ -127,12 +161,23 @@ class StimSeq :
         """
         if force or self.is_integer():
             self.stimSeq = self.int2float(self.stimSeq,scale,minval,maxval)
+=======
+    def convertstimSeq2int(self,scale=1):
+        """[summary]
+
+        Args:
+            scale (int, optional): [description]. Defaults to 1.
+        """        
+
+        self.stimSeq = self.float2int(self.stimSeq)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     @staticmethod
     def float2int(stimSeq,scale=1,minval=None,maxval=None):
         """convert float list of lists to integer
 
         Args:
+<<<<<<< HEAD
             stimSeq (list-of-list-of-float): (n_timepoints, n_object) the raw stimulus sequence
             scale (float, optional): multiplier to apply to the floating point values before conversion to int. Defaults to 1.
             minval (float, optional): minval to convert, i.e. this value == 1. Defaults to None.
@@ -147,6 +192,24 @@ class StimSeq :
                 if minval is not None: v=max(minval,v)
                 if maxval is not None: v=min(minval,v)
                 stimSeq[i][j] = v
+=======
+            stimSeq ([type]): [description]
+            scale (int, optional): [description]. Defaults to 1.
+            minval ([type], optional): [description]. Defaults to None.
+            maxval ([type], optional): [description]. Defaults to None.
+
+        Returns:
+            [type]: [description]
+        """        
+
+        if type(stimSeq[0][0]) is float :
+            for i in range(len(stimSeq)):
+                for j in range(len(stimSeq[i])):
+                    v = int(stimSeq[i][j]*scale)
+                    if minval is not None: v=max(minval,v)
+                    if maxval is not None: v=min(minval,v)
+                    stimSeq[i][j] = v
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         return stimSeq
 
     @staticmethod
@@ -177,10 +240,15 @@ class StimSeq :
         Args:
             rate ([type]): [description]
         """        
+<<<<<<< HEAD
+=======
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         setStimRate(self.stimTime_ms,rate)
         
     @staticmethod
     def readArray(f,width=-1):
+<<<<<<< HEAD
         """read an array from a character source, such as a file stream
 
         Args:
@@ -193,6 +261,21 @@ class StimSeq :
         Returns:
             (list-of-list-of-float): (n_timepoints, n_objects) array
         """
+=======
+        """[summary]
+
+        Args:
+            f ([type]): [description]
+            width (int, optional): [description]. Defaults to -1.
+
+        Raises:
+            Exception: [description]
+
+        Returns:
+            [type]: [description]
+        """    
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         array=[]
         nEmpty=0
         for line in f:
@@ -215,6 +298,7 @@ class StimSeq :
         """read a stimulus-sequence definition from a string
 
         Args:
+<<<<<<< HEAD
             f (str): the string to read the array definition from
 
         Raises:
@@ -222,6 +306,15 @@ class StimSeq :
 
         Returns:
             (list-of-list-of-float): the loaded array
+=======
+            f ([type]): [description]
+
+        Raises:
+            Exception: [description]
+
+        Returns:
+            [type]: [description]
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """  
 
         st=StimSeq.readArray(f) # read the stim times
@@ -239,10 +332,17 @@ class StimSeq :
         """read a stimulus-sequence from a file on disk
 
         Args:
+<<<<<<< HEAD
             fname (str): the file name to load the array from
 
         Returns:
             (list-of-list-of-float): the loaded array
+=======
+            fname ([type]): [description]
+
+        Returns:
+            [type]: [description]
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         """  
 
         import os.path
@@ -270,6 +370,7 @@ class StimSeq :
         ss = StimSeq.fromString(f)
         return ss
 
+<<<<<<< HEAD
     def toFile(self, fname, comment:str=None):
         """write the current stimulus-sequence to a text file format or a .png graphics file.
 
@@ -277,6 +378,15 @@ class StimSeq :
             fname (str): the file name to save the textual description of the stimulus sequence to
         """ 
         print("Saving to: {}".format(fname))
+=======
+    def toFile(self, fname):
+        """[summary]
+
+        Args:
+            fname ([type]): [description]
+        """ 
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         if '.png' in fname:
             # write out as a .png file
             # convert to byte with range 0-255
@@ -301,6 +411,7 @@ class StimSeq :
                 f.write(str(self))
 
 def transpose(M):
+<<<<<<< HEAD
     """swap the rows and colums of the input array
 
     Args:
@@ -309,6 +420,17 @@ def transpose(M):
     Returns:
         (list-of-list-of-?): the transposed array of size (j,i)
     """    
+=======
+    """[summary]
+
+    Args:
+        M ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """    
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     return [[row[i] for row in M] for i in range(len(M[0]))]
 
 
@@ -316,12 +438,22 @@ def setStimRate(stimTime_ms,framerate):
     """rewrite the stim-times to a new frequency
 
     Args:
+<<<<<<< HEAD
         stimTime_ms ([type]): total stimulus duration in milliseconds
         framerate ([type]): the framerate to use
 
     Returns:
         (list-of-float): the stimulus time of the events
     """
+=======
+        stimTime_ms ([type]): [description]
+        framerate ([type]): [description]
+
+    Returns:
+        [type]: [description]
+    """    
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     for i in range(len(stimTime_ms)):
         stimTime_ms[i] = i*1000/framerate
     return stimTime_ms
@@ -368,6 +500,7 @@ def mkRowCol(width=5,height=5, repeats=10, nEvents=None, level:int=1):
     return StimSeq(None,array.tolist(),None)
 
 
+<<<<<<< HEAD
 def mkRandLevel(ncodes=36, nEvent=400, soa=3, jitter=1, minval=0, maxval=1, nlevels=10):
     """make a random levels stimulus -- where rand level every soa frames
 
@@ -424,6 +557,9 @@ def mkRandLevelSet(ncodes=36, nEvent=400, soa=3, jitter=1, levels:list=None):
 
 def mkFreqTag(period_phase=((4,0),(5,0),(6,0),(7,0),(8,0),(3,1),(4,1),(5,1),(6,1),(7,1),(8,1),(3,2),(4,2),(5,2),(6,2),(7,2),(8,2),(4,3),(5,3),(6,3),(7,3),(8,3),(5,4),(6,4),(7,4),(8,4),(6,5),(7,5),(8,5),(7,6),(8,6),(8,7)),
             nEvent=840, isbinary=True, duty_cycle=.5):
+=======
+def mkFreqTag(period_phase=((4,0),(5,0),(6,0),(7,0),(8,0),(3,1),(4,1),(5,1),(6,1),(7,1),(8,1),(3,2),(4,2),(5,2),(6,2),(7,2),(8,2),(4,3),(5,3),(6,3),(7,3),(8,3),(5,4),(6,4),(7,4),(8,4),(6,5),(7,5),(8,5),(7,6),(8,6),(8,7)),nEvent=120, isbinary=True):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """Generate a frequency tagging stimulus sequence
 
     Args:
@@ -441,6 +577,7 @@ def mkFreqTag(period_phase=((4,0),(5,0),(6,0),(7,0),(8,0),(3,1),(4,1),(5,1),(6,1
         # generate the sequence
         if isbinary:
             s = (times + o) % l
+<<<<<<< HEAD
             if duty_cycle >=0:
                 s = s + np.random.uniform(-1e-3,1e-3,size=s.shape) # add some tie-breaking noise
                 array[:,i] = s > (l-1)*duty_cycle
@@ -449,10 +586,18 @@ def mkFreqTag(period_phase=((4,0),(5,0),(6,0),(7,0),(8,0),(3,1),(4,1),(5,1),(6,1
         else:
             s = np.sin( 2*np.pi* ( times.astype(np.float32)+o+1e-6)/l )
             s = (s + 1) / 2  # convert to 0-1 range
+=======
+            s = s + np.random.uniform(-1e-3,1e-3,size=s.shape)
+            array[:,i] = s > (l-1)/2
+        else:
+            s = np.sin( 2*np.pi* ( times.astype(np.float32)+o+1e-6)/l )
+            s = s / 2 + 1 # convert to 0-1 range
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
             array[:,i] = s
     return StimSeq(None,array.tolist(),None)
 
 
+<<<<<<< HEAD
 
 def mkBlockRandPatternReversal(ncodes=1, nEvent=None, nSweep=1, soa=0, blockLen=10, blockLevels:list()=None, randblk=True):
     """make a block random pattern reversal stimulus
@@ -1319,6 +1464,11 @@ def mkCodes():
     bpr.plot(show=True,title='multifocal sweep pattern reversal')
     bpr.toFile(os.path.join(savedir,'multifocal_sweep_pr.txt'))
 
+=======
+def mkCodes():
+    """[summary]
+    """    
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     # test generators
     rc=mkRowCol(width=5,height=5, repeats=10)
     rc.plot(show=True,title='rc')
@@ -1407,6 +1557,10 @@ def load_n_plotstimSeq(savefile=None):
     plt.plot(ac)
     plt.subplot(212)
     plt.imshow(cc)
+
+    ssvep_cont = mkFreqTag(isbinary=False)
+    ssvep_cont.toFile('ssvep_cont.png')
+    ssvep_cont.toFile('ssvep_cont.txt')
 
 # testcase code
 if __name__ == "__main__":

@@ -5,7 +5,11 @@ from mindaffectBCI.decoder.multipleCCA import robust_whitener
 from mindaffectBCI.decoder.updateSummaryStatistics import updateCxx
 import matplotlib.pyplot as plt
 
+<<<<<<< HEAD
 def load_ninapro_db2(datadir, filterband=((0,15), (45,65), (95,125), (250,-1)), envelopeband=(10,-1), trlen_ms=None, fs_out=60, nvirt=20, rectify=True, whiten=True, log=True, plot=False, filterbank=None, zscore_y=True, verb=1):
+=======
+def load_ninapro_db2(datadir, stopband=((0,15), (45,65), (95,125), (250,-1)), envelopeband=(10,-1), trlen_ms=None, fs_out=60, nvirt=20, rectify=True, whiten=True, log=True, plot=False, filterbank=None, zscore_y=True, verb=1):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     d = loadmat(datadir, variable_names=('emg', 'glove', 'stimulus'))
     X = d['emg'] # (nSamp,d)
     Y = d['glove'] # (nSamp,e)

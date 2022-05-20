@@ -1,5 +1,9 @@
 #  Copyright (c) 2019 MindAffect B.V. 
+<<<<<<< HEAD
 #  Author: Jason Farquhar <jadref@gmail.com>
+=======
+#  Author: Jason Farquhar <jason@mindaffect.nl>
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -15,7 +19,10 @@
 # You should have received a copy of the GNU General Public License
 # along with pymindaffectBCI.  If not, see <http://www.gnu.org/licenses/>
 
+<<<<<<< HEAD
 from subprocess import CalledProcessError
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 import numpy as np
 
 class InfoArray(np.ndarray):
@@ -238,7 +245,11 @@ def extract_ringbuffer_segment(rb, bgn_ts, end_ts=None):
 def unwrap(x,range=None):
     ''' unwrap a list of numbers to correct for truncation due to limited bit-resolution, e.g. time-stamps stored in 24bit integers'''
     if range is None: 
+<<<<<<< HEAD
         range = 1<< int(np.ceil(np.log2(max(np.abs(x)))))
+=======
+        range = 1<< int(np.ceil(np.log2(max(x))))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     wrap_ind = np.diff(x) < -range/2
     unwrap = np.zeros(x.shape)
     unwrap[np.flatnonzero(wrap_ind)+1]=range
@@ -256,6 +267,7 @@ def unwrap_test():
     plt.plot(xuw,label='x (unwrapped')
     plt.legend()
 
+<<<<<<< HEAD
 def robust_local_slope(nsamp,data_ts):
     """compute a robust local slope estimate
 
@@ -271,6 +283,8 @@ def robust_local_slope(nsamp,data_ts):
     local_slope = [ (snsamp[i+step] - snsamp[i]) / (data_ts[i+step]-data_ts[i]) for i in range(0,len(snsamp)-step,max(1,step//2)) ]
     return local_slope
 
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 def search_directories_for_file(f,*args):
     """search a given set of directories for given filename, return 1st match
@@ -289,12 +303,17 @@ def search_directories_for_file(f,*args):
         return f
     for d in args:
         #print('Searching dir: {}'.format(d))
+<<<<<<< HEAD
         df = os.path.join(os.path.expanduser(d),f)
+=======
+        df = os.path.join(d,f)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         if os.path.exists(df) or len(glob.glob(df))>0:
             f = df
             break
     return f
 
+<<<<<<< HEAD
 
 def askloadsavefile(initialdir:str=None,
                     filetypes:tuple=(('mindaffectBCI','mindaffectBCI*.txt'),('All','*.*')),
@@ -382,6 +401,8 @@ def get_version_info():
        res = "couldn't get version info"
     return res
 
+=======
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 # toy data generation
 
 #@function
@@ -456,11 +477,16 @@ def testSignal(nTrl=1, d=5, nE=1, nY=30, isi=5, A=True, tau=None, offset=0, nSam
         A[0,:]=0; A[0,0]=1; # 1st source is in channel 1
 
     if irf is None:
+<<<<<<< HEAD
         B  = np.zeros((tau,), dtype=np.float32)
         if B.shape[0]>3: 
             B[-3] = 1 
         else: 
             B[-1] = 1
+=======
+        B  = np.zeros((tau), dtype=np.float32)
+        B[-3] = 1;         # true response filter (shift by 10 samples)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     else:
         B = np.array(irf, dtype=np.float32)
     Ytrue = Y[..., 0, :] # (nTrl, nSamp, nE)
@@ -488,6 +514,8 @@ def testSignal(nTrl=1, d=5, nE=1, nY=30, isi=5, A=True, tau=None, offset=0, nSam
     N  = np.random.standard_normal(S.shape[:-1]+(d,)) # EEG noise (nTr, nSamp, d)
     X  = np.einsum("tse,ed->tsd", S, A) + noise2signal*N       # simulated data.. true source mapped through spatial pattern (nSamp, d)
     return (X.astype(np.float32), Y.astype(np.float32), stimTimes_samp, A.astype(np.float32), B.astype(np.float32))
+
+
 
 
 
@@ -745,7 +773,11 @@ def lab2ind(lab,lab2class=None):
     return (Y,lab2class)
 
 
+<<<<<<< HEAD
 def zero_outliers(X, Y, badEpThresh=4,  badWinThresh=3, badEpChThresh=None,winsz=50, verb=0):
+=======
+def zero_outliers(X, Y, badEpThresh=4, badEpChThresh=None, verbosity=0):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     '''identify and zero-out bad/outlying data
 
     Inputs:
@@ -844,6 +876,7 @@ def idOutliers(X, thresh=3.5, axis=-2, minthresh=None, center:bool=True, verbosi
         print("%d bad" % (np.sum(bad.ravel())))
     return (bad, power)
 
+<<<<<<< HEAD
 
 def idOutliers_win(X,thresh=3.5, axis=-2, minthresh=None, center:bool=True, winaxis:int=None, winsz:int=-30, winstep:int=None, verbosity=0):
     if not hasattr(axis,'__iter__'): axis=(axis,)
@@ -899,6 +932,34 @@ def robust_mean(X,thresh=(3,3)):
             good[X < badThresh] = False
     mu = np.mean(X[good])
 
+=======
+def robust_mean(X,thresh=(3,3)):
+    """Compute robust mean of values in X, using gaussian outlier criteria
+
+    Args:
+        X (the data): the data
+        thresh (2,): lower and upper threshold in standard deviations
+
+    Returns:
+        mu (): the robust mean
+        good (): the indices of the 'good' data in X
+    """    
+    good = np.ones(X.shape, dtype=bool)
+    for _ in range(4):
+        mu = np.mean(X[good])
+        sigma = np.sqrt(np.mean((X[good] - mu) ** 2))
+
+        # re-compute outlier list
+        good[:]=True
+        if thresh[0] is not None:
+            badThresh = mu + thresh[0]*sigma
+            good[X > badThresh] = False
+        if thresh[1] is not None:
+            badThresh = mu - thresh[0]*sigma
+            good[X < badThresh] = False
+    mu = np.mean(X[good])
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     return (mu, good)
 
 try:
@@ -949,7 +1010,11 @@ def sosfilt_zi_warmup(zi, X, axis=-1, sos=None):
         
     return zi
 
+<<<<<<< HEAD
 def iir_sosfilt_sos(filterband, fs, order=4, ftype='butter', passband=None, verb=0):
+=======
+def iir_sosfilt_sos(stopband, fs, order=4, ftype='butter', passband=None, verb=0):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     ''' given a set of filter cutoffs return butterworth or bessel sos coefficients '''
 
     # convert to normalized frequency, Note: not to close to 0/1
@@ -1005,12 +1070,20 @@ def iir_sosfilt_sos(filterband, fs, order=4, ftype='butter', passband=None, verb
     sos = np.concatenate(sos,axis=0) if len(sos)>0 else None
     return sos
 
+<<<<<<< HEAD
 def butter_sosfilt(X, filterband, fs:float, order:int=6, axis:int=-2, zi=None, verb=True, ftype='butter'):
+=======
+def butter_sosfilt(X, stopband, fs:float, order:int=6, axis:int=-2, zi=None, verb=True, ftype='butter'):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """use a (cascade of) butterworth SOS filter(s) filter X along axis
 
     Args:
         X (np.ndarray): the data to be filtered
+<<<<<<< HEAD
         filterband ([type]): the filter band specifications in Hz, as a list of lists of filterbands (given as (low-pass,high-pass)) or pass bands (given as (low-cut,high-cut,'bandpass'))
+=======
+        stopband ([type]): the filter band specifications in Hz, as a list of lists of stopbands (given as (low-pass,high-pass)) or pass bands (given as (low-cut,high-cut,'bandpass'))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         fs (float): the sampling rate of X
         order (int, optional): the desired filter order. Defaults to 6.
         axis (int, optional): the axis of X to filter along. Defaults to -2.
@@ -1024,17 +1097,25 @@ def butter_sosfilt(X, filterband, fs:float, order:int=6, axis:int=-2, zi=None, v
         zi (np.ndarray): the filter state for propogation between calls
 
     """    '''  '''
+<<<<<<< HEAD
     if filterband is None or len(filterband)==0: # deal with no filter case
+=======
+    if stopband is None: # deal with no filter case
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         return (X,None,None)
     if axis < 0: # no neg axis
         axis = X.ndim+axis
     # TODO []: auto-order determination?
+<<<<<<< HEAD
     sos = iir_sosfilt_sos(filterband, fs, order, ftype=ftype)
 
     # filter is not needed..
     if sos is None:
         return (X, None, None)
 
+=======
+    sos = iir_sosfilt_sos(stopband, fs, order, ftype=ftype)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     sos = sos.astype(X.dtype) # keep as single precision
 
     if zi is None:
@@ -1056,6 +1137,7 @@ def butter_sosfilt(X, filterband, fs:float, order:int=6, axis:int=-2, zi=None, v
     # return filtered data, filter-coefficients, filter-state
     return (X, sos, zi)
 
+<<<<<<< HEAD
 
 def butter_sosfiltfilt(X, filterband, fs:float, order:int=6, axis:int=-2, zi=None, verb=True, ftype='butter'):
     ## N.B. half the order as we apply the filter 2x
@@ -1077,6 +1159,16 @@ def save_butter_sosfilt_coeff(filename=None, filterband=((45,65),(5.5,25,'bandpa
     if filename is None:
         # auto-generate descriptive filename
         filename = "{}_filterband{}_fs{}.pk".format(ftype,filterband,fs)
+=======
+def save_butter_sosfilt_coeff(filename=None, stopband=((45,65),(5.5,25,'bandpass')), fs=200, order=6, ftype='butter'):
+    ''' design a butterworth sos filter cascade and save the coefficients '''
+    import pickle
+    sos = iir_sosfilt_sos(stopband, fs, order, passband=None, ftype=ftype)
+    zi = sosfilt_zi(sos)
+    if filename is None:
+        # auto-generate descriptive filename
+        filename = "{}_stopband{}_fs{}.pk".format(ftype,stopband,fs)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     print("Saving to: {}\n".format(filename))
     with open(filename,'wb') as f:
         pickle.dump(sos,f)

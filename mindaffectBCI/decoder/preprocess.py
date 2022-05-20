@@ -1,5 +1,9 @@
 #  Copyright (c) 2019 MindAffect B.V. 
+<<<<<<< HEAD
 #  Author: Jason Farquhar <jadref@gmail.com>
+=======
+#  Author: Jason Farquhar <jason@mindaffect.nl>
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -15,13 +19,19 @@
 # You should have received a copy of the GNU General Public License
 # along with pymindaffectBCI.  If not, see <http://www.gnu.org/licenses/>
 
+<<<<<<< HEAD
 from os import fsdecode
 from mindaffectBCI.decoder.utils import idOutliers, butter_sosfilt, block_permute, InfoArray, pool_axis
 from mindaffectBCI.decoder.updateSummaryStatistics import updateCxx, plot_trial
+=======
+from mindaffectBCI.decoder.utils import idOutliers, butter_sosfilt
+from mindaffectBCI.decoder.updateSummaryStatistics import updateCxx
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 from mindaffectBCI.decoder.multipleCCA import robust_whitener
 import copy
 import numpy as np
 
+<<<<<<< HEAD
 try:
     from sklearn.base import TransformerMixin
 except:
@@ -86,6 +96,9 @@ def preprocess_pipeline(X_TSd, Y_TSy, coords, pipeline:list=None, fs=None, ch_na
 
 
 def preprocess_old(X_TSd, Y_TSy, coords, fs=None, test_idx=None, *args):
+=======
+def preprocess(X, Y, coords, fs=None, whiten=False, whiten_spectrum=False, decorrelate=False, badChannelThresh=None, badTrialThresh=None, center=False, car=False, standardize=False, stopband=None, filterbank=None, nY=None, fir=None):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """apply simple pre-processing to an input dataset
 
     Args:
@@ -108,8 +121,13 @@ def preprocess_old(X_TSd, Y_TSy, coords, fs=None, test_idx=None, *args):
         Y_TSy ([type]): the stimulus (tr,samp,e)
         coords ([type]): meta-info for the data
     """
+<<<<<<< HEAD
     if fs is None and coords is not None: 
         fs = coords[-2]['fs']
+=======
+    if center:
+        X = X - np.mean(X, axis=-2, keepdims=True)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     if args is None:
         return X_TSd, Y_TSy, coords
@@ -131,6 +149,7 @@ def preprocess_old(X_TSd, Y_TSy, coords, fs=None, test_idx=None, *args):
             print('rmbadch')
             X_TSd, Y_TSy, coords = rmBadChannels(X_TSd, Y_TSy, coords, **args)
 
+<<<<<<< HEAD
         elif stagename == 'rmBadTrial'.lower():
             print('rmbadtr')
             X_TSd, Y_TSy, coords = rmBadTrial(X_TSd, Y_TSy, coords, **args)
@@ -280,6 +299,49 @@ def resample(X:np.ndarray, Y:np.ndarray, coords, axis=-2, resamprate:int=None, f
     # update coords
     if coords and 'fs' in coords[axis]:
         coords[axis]['fs'] = coords[axis]['fs'] / resamprate
+=======
+    if stopband is not None and stopband is not False:
+        X, _, _ = butter_sosfilt(X,stopband,fs=coords[-2]['fs'])
+
+    if whiten_spectrum > 0:
+        reg = whiten_spectrum if not isinstance(whiten_spectrum,bool) else .1
+        print("Spectral whiten:{}".format(reg))
+        X, W = spectrally_whiten(X, axis=-2, reg=reg)
+
+    if decorrelate > 0:
+        reg = decorrelate if not isinstance(decorrelate,bool) else .4
+        print("Temporally decorrelate:{}".format(reg))
+        X, W = temporally_decorrelate(X, axis=-2, reg=reg)
+
+    if standardize > 0:
+        reg = standardize if not isinstance(standardize,bool) else 1
+        print("Standardize channel power:{}".format(reg))
+        X, W = standardize_channel_power(X, axis=-2, reg=reg)
+
+    if filterbank is not None and filterbank is not False:
+        if fs is None and coords is not None: 
+            fs = coords[-2]['fs']
+        #X, _, _ = butter_filterbank(X,filterbank,fs=fs)
+        X = fft_filterbank(X,filterbank,fs=fs)
+        # make filterbank entries into virtual channels
+        X = np.reshape(X, X.shape[:-2]+(-1,))
+        # update meta-info
+        if coords is not None and 'coords' in coords[-1] and coords[-1]['coords'] is not None:
+            ch_names = coords[-1]['coords']
+            ch_names = ["{}_{}".format(c,f) for f in filterbank for c in coords]
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
+
+    if fir is not None:
+        X = fir(X,**fir)
+        # make taps into virtual channels
+        X = np.reshape(X, X.shape[:-2]+(-1,))
+        # update meta-info
+        if coords is not None and 'coords' in coords[-1] and coords[-1]['coords'] is not None:
+            ch_names = coords[-1]['coords']
+            ch_names = ["{}_{}".format(c,f) for f in ntap for c in coords]
+
+    if nY is not None:
+        Y = Y[...,:nY+1,:]
 
     return X, Y, coords
 
@@ -497,6 +559,7 @@ def spectrally_whiten(X_TSd:np.ndarray, reg=.01, axis=-2, test_idx=None):
     return (X_TSd,W)
 
 
+<<<<<<< HEAD
 def temporal_embedding(X_TSd:np.ndarray, ntap=3, dilation=1):
     from mindaffectBCI.decoder.utils import window_axis
     X_TSd = window_axis(X_TSd, axis=-2, winsz=ntap*dilation)
@@ -511,15 +574,36 @@ def standardize_channel_power(X_TSd:np.ndarray, sigma2:np.ndarray=None, axis=-2,
         X_TSd (np.ndarray): The data to standardize
         sigma2 (np.ndarray, optional): previous channel powers estimates. Defaults to None.
         axis (int, optional): dimension of X_TSd which is time. Defaults to -2.
+=======
+def fir(X:np.ndarray, ntap=3, dilation=1):
+    from mindaffectBCI.decoder.utils import window_axis
+    X = window_axis(X, axis=-2, winsz=ntap*dilation)
+    if dilation > 1:
+        X = X[...,::dilation,:] # extract the dilated points    
+    return X
+
+def standardize_channel_power(X:np.ndarray, sigma2:np.ndarray=None, axis=-2, reg=1e-1, alpha=1e-3):
+    """Adaptively standardize the channel powers
+
+    Args:
+        X (np.ndarray): The data to standardize
+        sigma2 (np.ndarray, optional): previous channel powers estimates. Defaults to None.
+        axis (int, optional): dimension of X which is time. Defaults to -2.
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         reg ([type], optional): Regularisation strength for power estimation. Defaults to 1e-1.
         alpha ([type], optional): learning rate for power estimation. Defaults to 1e-3.
 
     Returns:
+<<<<<<< HEAD
         sX: the standardized version of X_TSd
+=======
+        sX: the standardized version of X
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         sigma2 : the estimated channel power at the last sample of X
     """
     assert axis==-2, "Only currently implemeted for axis==-2"
 
+<<<<<<< HEAD
     # ensure 3-d input
     X_TSd = X_TSd.reshape( (-1,)*(3-X_TSd.ndim) + X_TSd.shape )
 
@@ -537,27 +621,62 @@ def standardize_channel_power(X_TSd:np.ndarray, sigma2:np.ndarray=None, axis=-2,
             sigma2[sigma2==0] = 1
             # set to unit-power - but regularize to stop maginfication of low-power, i.e. noise, ch
             sX[i,t,:] = X_TSd[i,t,:] / np.sqrt((sigma2 + reg*np.median(sigma2))/2)
+=======
+    # 3d-X recurse over trials 
+    if X.ndim == 3:
+        for i in range(X.shape[0]):
+            X[i,...], sigma2 = standardize_channel_power(X[i,...], sigma2=sigma2, reg=reg, alpha=alpha)
+        return X, sigma2
+
+    if sigma2 is None:
+        sigma2 = np.zeros((X.shape[-1],), dtype=X.dtype)
+        sigma2 = X[0,:]*X[0,:] # warmup with 1st sample power
+
+    # 2-d X
+    # return copy to don't change in-place!
+    sX = np.zeros(X.shape,dtype=X.dtype)
+    for t in range(X.shape[axis]):
+        # TODO[] : robustify this, e.g. clipping/windsorizing
+        sigma2 = sigma2 * (1-alpha) + X[t,:]*X[t,:]*alpha
+        sigma2[sigma2==0] = 1
+        # set to unit-power - but regularize to stop maginfication of low-power, i.e. noise, ch
+        sX[t,:] = X[t,:] / np.sqrt((sigma2 + reg*np.median(sigma2))/2)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     return sX,sigma2
 
 
+<<<<<<< HEAD
 def temporally_decorrelate(X_TSd:np.ndarray, W:np.ndarray=50, reg=.5, eta=1e-7, axis=-2, verb=0):
     """temporally decorrelate each channel of X_TSd by fitting and subtracting an AR model
 
     Args:
         X_TSd (np.ndarray trl,samp,d): the data to be whitened, with channels/space in the *last* axis
+=======
+def temporally_decorrelate(X:np.ndarray, W:np.ndarray=50, reg=.5, eta=1e-7, axis=-2, verb=0):
+    """temporally decorrelate each channel of X by fitting and subtracting an AR model
+
+    Args:
+        X (np.ndarray trl,samp,d): the data to be whitened, with channels/space in the *last* axis
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         W ( tau,d): per channel AR coefficients
         reg (float): regularization strength for fitting the AR model. Defaults to 1e-2
         eta (float): learning rate for the SGD. Defaults to 1e-5
 
     Returns:
+<<<<<<< HEAD
         X_TSd (np.ndarray): the whitened X_TSd
         W (np.ndarray (tau,d)): the AR model used to sample ahead predict X_TSd
+=======
+        X (np.ndarray): the whitened X
+        W (np.ndarray (tau,d)): the AR model used to sample ahead predict X
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """    
     assert axis==-2, "Only currently implemeted for axis==-2"
     if W is None:  W=10
     if isinstance(W,int):
         # set initial filter and order
+<<<<<<< HEAD
         W = np.zeros((W,X_TSd.shape[-1]))
         W[-1,:]=1
 
@@ -578,6 +697,28 @@ def temporally_decorrelate(X_TSd:np.ndarray, W:np.ndarray=50, reg=.5, eta=1e-7, 
         else:
             Xt = X_TSd[t,:] # current input (d,)
             Xtau = X_TSd[t-W.shape[0]:t,:] # current prediction window (N,d)
+=======
+        W = np.zeros((W,X.shape[-1]))
+        W[-1,:]=1
+
+    if X.ndim > 2: # 3-d version, loop and recurse
+        wX = np.zeros(X.shape,dtype=X.dtype)
+        for i in range(X.shape[0]):
+            # TODO[]: why does propogating the model between trials reduce the decorrelation effectivness?
+            wX[i,...], W = temporally_decorrelate(X[i,...],W=W,reg=reg,eta=eta,axis=axis,verb=verb)
+        return wX, W
+    
+    # 2-d X
+    wX = np.zeros(X.shape,dtype=X.dtype)
+    dH = np.ones(X.shape[-1],dtype=X.dtype)
+    for t in range(X.shape[-2]):
+        if t < W.shape[0]:
+            wX[t,:] = X[t,:]
+
+        else:
+            Xt = X[t,:] # current input (d,)
+            Xtau = X[t-W.shape[0]:t,:] # current prediction window (N,d)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
 
             # compute the prediction error:
@@ -599,8 +740,12 @@ def temporally_decorrelate(X_TSd:np.ndarray, W:np.ndarray=50, reg=.5, eta=1e-7, 
     return (wX,W)
 
 
+<<<<<<< HEAD
 def butter_filterbank(X_TSd:np.ndarray, filterbank, fs:float, axis=-2, order=4, ftype='butter', verb=1):
     # TODO[]: lag the banks to phase align for re-construction!
+=======
+def butter_filterbank(X:np.ndarray, filterbank, fs:float, axis=-2, order=4, ftype='butter', verb=1):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     if verb > 0:  print("Filterbank: {}".format(filterbank))
     if not axis == -2:
         raise ValueError("axis other than -2 not supported yet!")
@@ -609,6 +754,7 @@ def butter_filterbank(X_TSd:np.ndarray, filterbank, fs:float, axis=-2, order=4, 
     if zi is None:
         zi = [None]*len(filterbank)
     # apply filter bank to frequency ranges into virtual channels
+<<<<<<< HEAD
     Xf=np.zeros(X_TSd.shape[:axis+1]+(len(filterbank),)+X_TSd.shape[axis+1:],dtype=X_TSd.dtype)
     for bi,filterband in enumerate(filterbank):
         if verb>1: print("{}) band={}\n".format(bi,filterband))
@@ -616,11 +762,33 @@ def butter_filterbank(X_TSd:np.ndarray, filterbank, fs:float, axis=-2, order=4, 
             Xf[...,bi,:], sos[bi], zi[bi] = butter_sosfilt(X_TSd.copy(),filterband=filterband,axis=axis,fs=fs,order=order,ftype=ftype)
         else:
             Xf[...,bi,:], sos[bi], zi[bi] = sosfilt(sos[bi],X_TSd.copy(),zi=zi[bi],axis=axis)
+=======
+    Xf=np.zeros(X.shape[:axis+1]+(len(filterbank),)+X.shape[axis+1:],dtype=X.dtype)
+    for bi,stopband in enumerate(filterbank):
+        if verb>1: print("{}) band={}\n".format(bi,stopband))
+        if sos[bi] is None:
+            Xf[...,bi,:], sos[bi], zi[bi] = butter_sosfilt(X.copy(),stopband=stopband,axis=axis,fs=fs,order=order,ftype=ftype)
+        else:
+            Xf[...,bi,:], sos[bi], zi[bi] = sosfilt(sos[bi],X.copy(),zi=zi[bi],axis=axis)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     # TODO[X]: make a nicer shape, e.g. (tr,samp,band,ch)
     #X = np.concatenate([X[...,np.newaxis,:] for X in Xs],-2)
     return Xf, sos, zi
 
+def fft_filterbank(X:np.ndarray, filterbank, fs:float, axis=-2, verb=1):
+    from scipy.signal import sosfilt
+    if verb > 0:  print("Filterbank: {}".format(filterbank))
+
+    # apply filter bank to frequency ranges into virtual channels
+    Xf=np.zeros(X.shape[:axis+1]+(len(filterbank),)+X.shape[axis+1:],dtype=X.dtype)
+    Fx = np.fft.fft(X,axis=axis)
+    freqs = np.fft.fftfreq(X.shape[axis], d=1/fs)
+    for bi,stopband in enumerate(filterbank):
+        if verb>1: print("{}) band={}\n".format(bi,stopband))
+        mask = np.logical_and(stopband[0] <= np.abs(freqs), np.abs(freqs) < stopband[1])
+        Xf[...,bi,:] = np.fft.ifft(Fx*mask[:,np.newaxis], axis=axis).real
+    return Xf
 
 def fir_filterbank(X_TSd:np.ndarray, filterbank, fs:float, axis=-2, order=4, ftype='butter', verb=1):
     if verb > 0:  print("Filterbank: {}".format(filterbank))
@@ -1121,6 +1289,7 @@ def extract_envelope(X,fs,
     return X
 
 
+<<<<<<< HEAD
 def block_cov(X_TSd, Y_TSy, coords, axis=-2, blksz=None, blksz_ms=500, fs=100, resample_y='max', verb=1):
     """overlap-add FFT filterbank / filter, suitable for on-line application
 
@@ -1247,6 +1416,15 @@ def testCase_spectralwhiten(X=None, Y=None, fs=100):
         np.random.seed(1)
         X = np.random.standard_normal((2,fs*3,2)) # flat spectrum
         X = X[:,:-1,:]+X[:,1:,:] # weak low-pass
+=======
+def testCase_spectralwhiten():
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mindaffectBCI.decoder.updateSummaryStatistics import plot_erp
+    fs=100
+    X = np.random.standard_normal((2,fs*3,2)) # flat spectrum
+    X = X[:,:-1,:]+X[:,1:,:] # weak low-pass
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     #X = np.cumsum(X,-2) # 1/f spectrum
     print("X={}".format(X.shape))
     plt.figure(1)
@@ -1263,6 +1441,7 @@ def testCase_spectralwhiten(X=None, Y=None, fs=100):
     plt.show()
 
 
+<<<<<<< HEAD
 def testCase_block_cov(X=None, Y=None, fs=100):
     import numpy as np
     import matplotlib.pyplot as plt
@@ -1295,6 +1474,35 @@ def testCase_block_cov(X=None, Y=None, fs=100):
 
 
 def testCase_temporallydecorrelate(X=None,fs=100):
+=======
+def testCase_temporallydecorrelate(X=None,fs=100):
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mindaffectBCI.decoder.updateSummaryStatistics import plot_erp
+    fs=100
+    if X is None:
+        X = np.random.standard_normal((2,fs*3,2)) # flat spectrum
+        #X = X + np.sin(np.arange(X.shape[-2])*2*np.pi/10)[:,np.newaxis]
+        X = X[:,:-1,:]+X[:,1:,:] # weak low-pass
+
+        #X = np.cumsum(X,-2) # 1/f spectrum
+    print("X={}".format(X.shape))
+    plt.figure(1)
+    plot_grand_average_spectrum(X, fs)
+    plt.suptitle('Raw')
+    plt.show(block=False)
+
+    wX, _ = temporally_decorrelate(X)
+    
+    # compare raw vs summed filterbank
+    plt.figure(2)
+    plot_grand_average_spectrum(wX,fs)
+    plt.suptitle('Decorrelated')
+    plt.show()
+
+
+def testCase_filterbank():
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     import numpy as np
     import matplotlib.pyplot as plt
     from mindaffectBCI.decoder.updateSummaryStatistics import plot_erp
@@ -1337,6 +1545,7 @@ def testCase_fftfilter(X_TSd=None, Y_TSy=None, fs=100, bands=((0,10,'bandpass'))
     #plot_grand_average_spectrum(X_TSd, fs)
     #plt.show()
 
+<<<<<<< HEAD
     oX_TSd = X_TSd.copy()
 
     X_TSd0 = oX_TSd
@@ -1401,6 +1610,13 @@ def testCase_filterbank(X_TSd=None, Y_TSy=None, fs=100):
     #Xf,Yf,coordsf = preprocess(X, None, None, filterbank=bands, fs=100)
     #Xf, _, _ = butter_filterbank(X,bands,fs,order=3,ftype='butter') # tr,samp,band,ch
     #Xf = fft_filterbank(X,bands,fs=100)
+=======
+
+    bands = ((1,10,'bandpass'),(10,20,'bandpass'),(20,40,'bandpass'))
+    #Xf,Yf,coordsf = preprocess(X, None, None, filterbank=bands, fs=100)
+    #Xf, _, _ = butter_filterbank(X,bands,fs,order=3,ftype='butter') # tr,samp,band,ch
+    Xf = fft_filterbank(X,bands,fs=100)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     print("Xf={}".format(Xf.shape))
     # bands -> virtual channels
     # make filterbank entries into virtual channels
@@ -1453,6 +1669,7 @@ def test_fir(X_TSd=None, Y_TSy=None, fs=100):
     plot_grand_average_spectrum(np.concatenate((X[:,np.newaxis,...],Xf[:,np.newaxis,...],np.moveaxis(Xf,(0,1,2,3),(0,2,1,3))),1), fs)
     plt.legend(('X','Xf_s','X_bands'))
     plt.show()
+<<<<<<< HEAD
 
 if __name__=="__main__":
 
@@ -1478,6 +1695,52 @@ if __name__=="__main__":
     testCase_filterbank(X,Y,fs)
 
     testCase_block_cov(X,Y,fs)
+=======
+
+def test_fir():
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from mindaffectBCI.decoder.updateSummaryStatistics import plot_erp
+    fs=100
+    X = np.random.standard_normal((2,fs*3,2)) # flat spectrum
+    X = X[:,:-1,:]+X[:,1:,:] # weak low-pass
+    #X = np.cumsum(X,-2) # 1/f spectrum
+    print("X={}".format(X.shape))
+    #plt.figure()
+    #plot_grand_average_spectrum(X, fs)
+    #plt.show()
+
+
+    bands = ((1,10,'bandpass'),(10,20,'bandpass'),(20,40,'bandpass'))
+    Xf,Yf,coordsf = preprocess(X, None, None, fir=dict(ntap=3,dilation=3), fs=100)
+    #Xf, _, _ = butter_filterbank(X,bands,fs,order=3,ftype='butter') # tr,samp,band,ch
+    print("Xf={}".format(Xf.shape))
+    # bands -> virtual channels
+    # make filterbank entries into virtual channels
+    plt.figure()
+    Xf_s = np.sum(Xf,-2,keepdims=False)
+    plot_grand_average_spectrum(np.concatenate((X[:,np.newaxis,...],Xf_s[:,np.newaxis,...],np.moveaxis(Xf,(0,1,2,3),(0,2,1,3))),1), fs)
+    plt.legend(('X','Xf_s','X_bands'))
+    plt.show()
+
+if __name__=="__main__":
+
+    savefile = '~/Desktop/mark/mindaffectBCI*.txt'
+
+    import glob
+    import os
+    files = glob.glob(os.path.expanduser(savefile)); 
+    #os.path.join(os.path.dirname(os.path.abspath(__file__)),fileregexp)) # * means all if need specific format then *.csv
+    savefile = max(files, key=os.path.getctime)
+
+    # load
+    from mindaffectBCI.decoder.offline.load_mindaffectBCI  import load_mindaffectBCI
+    X, Y, coords = load_mindaffectBCI(savefile, stopband=((45,65),(5.5,25,'bandpass')), order=6, ftype='butter', fs_out=100)
+    # output is: X=eeg, Y=stimulus, coords=meta-info about dimensions of X and Y
+    print("EEG: X({}){} @{}Hz".format([c['name'] for c in coords],X.shape,coords[1]['fs']))
+    print("STIMULUS: Y({}){}".format([c['name'] for c in coords[:1]]+['output'],Y.shape))
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     testCase_temporallydecorrelate(X)
     #testCase_spectralwhiten()

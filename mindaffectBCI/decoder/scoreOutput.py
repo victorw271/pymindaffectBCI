@@ -18,7 +18,11 @@
 import numpy as np
 from mindaffectBCI.decoder.utils import window_axis
 #@function
+<<<<<<< HEAD
 def scoreOutput(Fe_mTSe, Y_TSye, dedup0=None, R_mket=None, offset=None, outputscore='ip'):
+=======
+def scoreOutput(Fe_mTSe, Y_TSye, dedup0=None, R=None, offset=None, outputscore='ip'):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     '''
     score each output given information on which stim-sequences corrospend to which inputs
 
@@ -41,10 +45,47 @@ def scoreOutput(Fe_mTSe, Y_TSye, dedup0=None, R_mket=None, offset=None, outputsc
     if Fe_mTSe.size == 0:
         Fy_mTSy = np.zeros(Fe_mTSe.shape[:-1] + (Y_TSye.shape[-2],),dtype=np.float32)
         return Fy_mTSy
+<<<<<<< HEAD
 
     # ensure correct input number dims
     Y_TSye = Y_TSye.reshape((1,)*(4-Y_TSye.ndim)+Y_TSye.shape)    
     Fe_mTSe = Fe_mTSe.reshape((1,)*(4-Fe_mTSe.ndim)+Fe_mTSe.shape)    
+=======
+    if Y_TSye.ndim < 4: # ensure 4-d
+        Y_TSye = Y_TSye.reshape((1,)*(4-Y_TSye.ndim)+Y_TSye.shape)    
+    if Fe_mTSe.ndim < 4: # ensure 4-d
+        Fe_mTSe = Fe_mTSe.reshape((1,)*(4-Fe_mTSe.ndim)+Fe_mTSe.shape)    
+    if dedup0 is not None and dedup0 is not False: # remove duplicate copies output=0
+        Y_TSye = dedupY0(Y_TSye, zerodup=dedup0>0)
+    # ensure Y_TSye has same type of Fe_mTSe
+    Y_TSye = Y_TSye.astype(Fe_mTSe.dtype)
+
+    # inner-product score
+    if offset is None:
+        Fy_mTSy = np.einsum("mTEe,TEYe->mTEY", Fe_mTSe, Y_TSye, dtype=Fe_mTSe.dtype)
+        Fy_mTSy = Fy_mTSy.astype(Fe_mTSe.dtype)
+
+    else:
+        assert Fe_mTSe.ndim<4 or Fe_mTSe.shape[0]==1, "Offsets only for single models!"
+        if not hasattr(offset,'__iter__'): 
+            offset=[offset]
+        # list of possible offsets to try
+        Fy_mTSy= np.zeros((len(offset), Fe_mTSe.shape[1], Fe_mTSe.shape[2], Y_TSye.shape[-2]), dtype=Fe_mTSe.dtype)
+        for i,o in enumerate(offset):
+            # +offset -> Y is later than it 'should' be
+            if o == 0:
+                Fyi = np.einsum("mTEe,TEYe->mTEY", Fe_mTSe, Y_TSye, dtype=Fe_mTSe.dtype)
+                Fy_mTSy[i,...] = Fyi.astype(Fe_mTSe.dtype)
+
+            elif o > 0:
+                Fyi = np.einsum("mTEe,TEYe->mTEY", Fe_mTSe[..., o: ,: ], Y_TSye[..., :-o , :, :], dtype=Fe_mTSe.dtype)
+                Fy_mTSy[i, ..., o:, :] = Fyi.astype(Fe_mTSe.dtype)
+
+            else:
+                Fyi = np.einsum("mTEe,TEYe->mTEY", Fe_mTSe[..., :o ,:], Y_TSye[..., -o: , :, :], dtype=Fe_mTSe.dtype)
+                Fy_mTSy[i, ..., :o, :] = Fyi.astype(Fe_mTSe.dtype)
+
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     if dedup0 is not None and dedup0 is not False: # remove duplicate copies output=0
         Y_TSye = dedupY0(Y_TSye, zerodup=dedup0>0)
@@ -79,14 +120,20 @@ def scoreOutput(Fe_mTSe, Y_TSye, dedup0=None, R_mket=None, offset=None, outputsc
 
     # TODO[]: validate these score functions are acrrect.
     # add correction for other measures
+<<<<<<< HEAD
     if outputscore == 'sse' or outputscore == 'msse':
         YR = convYR(Y_TSye,R_mket,offset) # (nM,nTrl,nSamp,nY,nFilt)
+=======
+    if outputscore == 'sse':
+        YR = convYR(Y_TSye,R,offset) # (nM,nTrl,nSamp,nY,nFilt)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         # Apply the correction:
         #  SSE = (wX-Yr).^2
         #      = wX**2 - 2 wXYr + Yr**2
         #      = wX**2 - 2 Fe*Y + Yr**2
         #  -sse/2= Fy - Yr**2/2 - wX**2/2
         #  take negative, so big (i.e. 0) is good, and drop constant over Y and divide by 2 ->
+<<<<<<< HEAD
         #  -SSE/2 = Fy - Yr**2/2 - wX**2/2 &= Fe*Y - Yr**2/2
         rYYr = np.sum(YR*YR,-1)
         if outputscore == 'msse': 
@@ -96,6 +143,10 @@ def scoreOutput(Fe_mTSe, Y_TSye, dedup0=None, R_mket=None, offset=None, outputsc
         else:
             alpha = 1
         Fy_mTSy = Fy_mTSy - rYYr * alpha / 2
+=======
+        #  -SSE = fY  = Fe*Y - .5* Yr**2
+        Fy_mTSy = Fy_mTSy - np.sum(YR**2,-1) / 2
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     elif outputscore == 'corr': # correlation based scoring...  hard to do in a summable way...
         YR = convYR(Y_TSye,R_mket,offset) # (nM,nTrl,nSamp,nY,nFilt)
@@ -161,6 +212,7 @@ def dedupY0(Y, zerodup=True, yfeatdim=True, verb=0):
 
 def convWX(X,W):
     ''' apply spatial filter W  to X '''
+<<<<<<< HEAD
     W=W.reshape((1,)*(3-W.ndim)+W.shape)
     X=X.reshape((1,)*(3-X.ndim)+X.shape)
 
@@ -174,6 +226,23 @@ def convYR(Y_TSye, R_Mket, offset=None):
     R_Mket = R_Mket.reshape((1,)*(4-R_Mket.ndim)+R_Mket.shape) # (nM,nfilt,nE,tau)
     Y_TSye = Y_TSye.reshape((1,)*(4-Y_TSye.ndim)+Y_TSye.shape) # (nTr,nSamp,nY,nE)
 
+=======
+    if W.ndim < 3:
+        W=W.reshape((1,)*(3-W.ndim)+W.shape)
+    if X.ndim < 3:
+        X=X.reshape((1,)*(3-X.ndim)+X.shape)
+    WX = np.einsum("TSd,mfd->mTSf",X, W, dtype=W.dtype)
+    return WX #(nM,nTrl,nSamp,nfilt)
+
+def convYR(Y,R,offset=None):
+    ''' compute the convolution of Y with R '''
+    if R is None:
+        return Y
+    if R.ndim < 4: # ensure 4-d
+        R = R.reshape((1,)*(4-R.ndim)+R.shape) # (nM,nfilt,nE,tau)
+    if Y.ndim < 4: # ensure 4-d
+        Y = Y.reshape((1,)*(4-Y.ndim)+Y.shape) # (nTr,nSamp,nY,nE)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     if offset is None:
         offset=0
     #print("R={}".format(R.shape))
@@ -204,6 +273,7 @@ def convWXYR(X,Y,W,R,offset=0):
     WXYR = np.sum(WX[...,np.newaxis,:]*YR,-1) #(nTr,nSamp,nY)
     return WXYR,WX,YR
 
+<<<<<<< HEAD
 def sse(X,Y,W,R,offset=0):
     WX = convWX(X,W)
     YR = convYR(Y,R,offset)
@@ -236,6 +306,66 @@ def corr_cov(Cxx_dd, Cyx_yetd, Cyy_yetet, W_kd, R_ket, offset=0):
         W_kd ([type]): [description]
         R_ket ([type]): [description]
         offset (int, optional): [description]. Defaults to 0.
+=======
+#@function
+def testcases():
+    from utils import testSignal
+    from scoreOutput import scoreOutput, plot_outputscore, convWX, convYR, convXYR
+    from scoreStimulus import scoreStimulus
+    from decodingSupervised import decodingSupervised
+    from normalizeOutputScores import normalizeOutputScores
+    import numpy as np
+
+    # Fe  = (nM,nTrl,nSamp,nE) similarity score for each event type for each stimulus
+    # Ye  = (nTrl,nSamp,nY,nE) Indicator for which events occured for which outputs
+    nE=2
+    nSamp=100
+    nTrl=30
+    nY=20
+    nM=1
+    sigstr = 1e-2
+    N=np.random.standard_normal((nM,nTrl,nSamp,nE))
+    Ye=np.random.standard_normal((nTrl,nSamp,nY,nE))
+    # make Ye[0]=Fe
+    Fe = N + Ye[...,0,:] * sigstr
+    print("Fe={}".format(Fe.shape))
+    print("Ye={}".format(Ye.shape))
+    Fy = scoreOutput(Fe,Ye) # (nM,nTrl,nSamp,nY)
+    print("Fy={}".format(Fy.shape))
+    import matplotlib.pyplot as plt
+    sFy=np.cumsum(Fy,axis=-2)
+    plt.clf();plt.plot(sFy[0,0,:,:]);plt.xlabel('epoch');plt.ylabel('output');plt.show()
+
+    # try with range offsets between Fe, Ye
+    offset=2
+    offsets=np.arange(-6,6)
+    Fe = N 
+    Fe[..., offset: , :] = Fe[..., offset:, :] + Ye[..., :-offset, 0, :]
+    Fy = scoreOutput(Fe,Ye, offset=offsets) # (nM,nTrl,nSamp,nY), nM=num-offset
+    print("Fy={}".format(Fy.shape))
+    import matplotlib.pyplot as plt
+    sFy=np.cumsum(Fy,axis=-2)
+    plt.clf();
+    for i,o in enumerate(offsets):
+        plt.subplot(len(offsets),1,i+1)
+        plt.plot(sFy[i,0,:,:]);plt.xlabel('epoch');plt.ylabel('output');
+        plt.title("offset={}".format(o))
+    plt.show()
+
+
+    # more complex example with actual signal/noise
+    irf=(1,1,-1,-1,0,0,0,0,0,0)
+    X,Y,st,W,R = testSignal(nTrl=1,nSamp=1000,d=1,nE=1,nY=10,isi=2,irf=irf,noise2signal=0)
+
+    plot_outputscore(X[0,...],Y[0,:,0:3,:],W,R)
+    plt.show()
+    
+    # add a correlated output
+    Y[:,:,1,:]=Y[:,:,0,:]*.5
+    plot_outputscore(X[0,...],Y[0,:,0:3,:],W,R)
+    plt.show()
+    
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     Returns:
         [type]: [description]
@@ -249,6 +379,30 @@ def corr_cov(Cxx_dd, Cyx_yetd, Cyy_yetet, W_kd, R_ket, offset=0):
     return corr_y, corr_yk
 
 
+<<<<<<< HEAD
+=======
+    # test with reduced number  classes?
+    nY=8
+    Y=Y[:,:,:nY+1,:nY]
+
+    plt.close('all')
+    debug_test_dataset(X, Y, coords, tau_ms=tau_ms, offset_ms=offset_ms, evtlabs=evtlabs, rank=8, outputscore='ip', model='cca')
+        
+    fs = coords[1]['fs']
+    tau = min(X.shape[-2],int(tau_ms*fs/1000))
+    offset=int(offset_ms*fs/1000)
+    cca = MultiCCA(tau=tau, offset=offset, rank=rank, evtlabs=evtlabs)
+    cca.fit(X,Y)
+    Fy = cca.predict(X, Y, dedup0=True)
+    (_) = decodingCurveSupervised(Fy)
+    W=cca.W_
+    R=cca.R_
+    b=cca.b_
+
+    plot_outputscore(X[0,...],Y[0,...],W,R)
+
+       
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 def plot_Fy(Fy,cumsum=True, label=None, legend=False, maxplots=25):
     import matplotlib.pyplot as plt
     import numpy as np

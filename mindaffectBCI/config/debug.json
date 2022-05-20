@@ -21,12 +21,22 @@
 
     "presentation":"selectionMatrix",
     "presentation_args":{
+<<<<<<< HEAD:mindaffectBCI/config/debug.json
         "ncal":10,
+=======
+        "ncal":4,
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a:mindaffectBCI/debug.json
         "npred":10,
         "selectionThreshold":0.1,
         "symbols":"keyboard.txt",
 	    "calibration_symbols":"3x3.txt",
         "stimfile":"mgold_65_6532_psk_60hz.png",
+<<<<<<< HEAD:mindaffectBCI/config/debug.json
+=======
+        "calibration_trialduration":4,
+        "prediction_trialduration":20,
+        "feedbackduration":1,
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a:mindaffectBCI/debug.json
         "bgFraction":0.1,
         "framesperbit":1,
         "fullscreen":false,

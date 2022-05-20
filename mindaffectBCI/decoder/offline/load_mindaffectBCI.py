@@ -1,24 +1,39 @@
 import os
 import glob
+<<<<<<< HEAD
 from mindaffectBCI.utopiaclient import DataHeader, NewTarget
 import numpy as np
 from mindaffectBCI.decoder.offline.read_mindaffectBCI import read_mindaffectBCI_data_messages
 from mindaffectBCI.decoder.devent2stimsequence import devent2stimSequence, upsample_stimseq, devent2stimchannels, devent2markerchannels, stimchannels2markerchannels
 from mindaffectBCI.decoder.utils import block_randomize, butter_sosfilt, window_axis, unwrap, askloadsavefile
+=======
+import numpy as np
+from mindaffectBCI.decoder.offline.read_mindaffectBCI import read_mindaffectBCI_data_messages
+from mindaffectBCI.decoder.devent2stimsequence import devent2stimSequence, upsample_stimseq
+from mindaffectBCI.decoder.utils import block_randomize, butter_sosfilt, upsample_codebook, lab2ind, window_axis, unwrap
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 from mindaffectBCI.decoder.UtopiaDataInterface import butterfilt_and_downsample
 from mindaffectBCI.decoder.preprocess import ola_fftfilter
 
+<<<<<<< HEAD
 def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, load_from_cached:bool=True,
                         fs_out:float=10000, filterband=((45,65),(.5,45,'bandpass')), order:int=6, ftype:str='butter',  
                         iti_ms:float=1500, trlen_ms:float=None, offset_ms:float=(-2000,2000), subtriallen_ms:float=None,
                         zero_before_stimevents:bool=False,  sample2timestamp='lower_bound_tracker',#'robust_timestamp_regression',
                         ch_names=None, verb:int=0, **kwargs):
+=======
+def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, fs_out:float=100, stopband=((45,65),(5.5,25,'bandpass')), order:int=6, ftype:str='butter', verb:int=0, iti_ms:float=1000, trlen_ms:float=None, offset_ms:float=(-500,500), ch_names=None, **kwargs):
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     """Load and pre-process a mindaffectBCI offline save-file and return the EEG data, and stimulus information
 
     Args:
         source (str, stream): the source to load the data from, use '-' to load the most recent file from the logs directory.
         fs_out (float, optional): [description]. Defaults to 100.
+<<<<<<< HEAD
         filterband (tuple, optional): Specification for a (cascade of) temporal (IIR) filters, in the format used by `mindaffectBCI.decoder.utils.butter_sosfilt`. Defaults to ((45,65),(5.5,25,'bandpass')).
+=======
+        stopband (tuple, optional): Specification for a (cascade of) temporal (IIR) filters, in the format used by `mindaffectBCI.decoder.utils.butter_sosfilt`. Defaults to ((45,65),(5.5,25,'bandpass')).
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         order (int, optional): the order of the temporal filter. Defaults to 6.
         ftype (str, optional): The type of filter design to use.  One of: 'butter', 'bessel'. Defaults to 'butter'.
         verb (int, optional): General verbosity/logging level. Defaults to 0.
@@ -26,6 +41,32 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, load_from_cac
         trlen_ms (float, optional): Trial duration in milli-seconds.  If None then this is deduced from the stimulus information. Defaults to None.
         offset_ms (tuple, (2,) optional): Offset in milliseconds from the trial start/end for the returned data such that X has range [tr_start+offset_ms[0] -> tr_end+offset_ms[0]]. Defaults to (-500,500).
         ch_names (tuple, optional): Names for the channels of the EEG data.
+<<<<<<< HEAD
+=======
+
+    Returns:
+        X (np.ndarray (nTrl,nSamp,nCh)): the pre-processed per-trial EEG data
+        Y (np.ndarray (nTrl,nSamp,nY)): the up-sampled stimulus information for each output
+        coords (list-of-dicts (3,)): dictionary with meta-info for each dimension of X & Y.  As a minimum this contains
+                          "name"- name of the dimension, "unit" - the unit of measurment, "coords" - the 'value' of each element along this dimension
+    """    
+    if source is None or source == '-':
+        # default to last log file if not given
+        files = glob.glob(os.path.join(os.path.dirname(os.path.abspath(__file__)),'../../../logs/mindaffectBCI*.txt')) # * means all if need specific format then *.csv
+        source= max(files, key=os.path.getctime)
+
+    if isinstance(source,str):
+        if sessdir:
+            source = os.path.join(sessdir, source)
+        if datadir:
+            source = os.path.join(datadir, source)
+        files = glob.glob(os.path.expanduser(source))
+        source = max(files, key=os.path.getctime)
+
+    if verb >= 0 and isinstance(source,str): print("Loading {}".format(source))
+    # TODO []: convert to use the on-line time-stamp code
+    X, messages = read_mindaffectBCI_data_messages(source, **kwargs)
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     Returns:
         X (np.ndarray (nTrl,nSamp,nCh)): the pre-processed per-trial EEG data
@@ -47,8 +88,12 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, load_from_cac
     idx = range(0,data_ts.shape[0],1000)
     samp2ms = np.median( np.diff(data_ts[idx])/1000.0 ) 
     fs = 1000.0 / samp2ms
+<<<<<<< HEAD
     if not fs_out is None:
         fs_out = min(fs,fs_out)
+=======
+    ch_names = ch_names
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     if verb > 0: print("X={} @{}Hz".format(X.shape,fs),flush=True)
 
@@ -64,11 +109,19 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, load_from_cac
         filterband.append((fs_out*.45, -1))
 
     # incremental call in bits
+<<<<<<< HEAD
     ppfn = butterfilt_and_downsample(filterband=filterband, order=order, fs=fs, fs_out=fs_out, ftype=ftype)
     #ppfn = None
     if ppfn is not None:
         if verb > 0:
             print("preFilter: {}th {} {}Hz & downsample {}->{}Hz".format(order,ftype,filterband,fs,fs_out))
+=======
+    ppfn = butterfilt_and_downsample(stopband=stopband, order=order, fs=fs, fs_out=fs_out, ftype=ftype)
+    #ppfn = None
+    if ppfn is not None:
+        if verb >= 0:
+            print("preFilter: {}th {} {}Hz & downsample {}->{}Hz".format(order,ftype,stopband,fs,fs_out))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         #ppfn.fit(X[0:1,:])
         # process in blocks to be like the on-line, use time-stamp as Y to get revised ts
         if False:
@@ -92,6 +145,7 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, load_from_cac
     #import pickle
     #pickle.dump(dict(data=np.append(X,data_ts[:,np.newaxis],-1),stim=np.append(Me,stim_ts[:,np.newaxis],-1)),open('pp_lmbci.pk','wb'))
 
+<<<<<<< HEAD
     if zero_before_stimevents:
         # insert an all-zero stimEvent in the *sample* before each current stim-event
         sampdur_ms = int(np.round(1000/fs))
@@ -153,11 +207,44 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, load_from_cac
     # strip any trial too much shorter than trlen_ms (50%)
     keep = np.flatnonzero(trl_dur>trlen_ms*.2)
     if verb>1 : print('Got {} trials, keeping {}'.format(len(trl_stim_idx)-1,len(keep)))
+=======
+    # extract the stimulus sequence
+    Me, stim_ts, objIDs, _ = devent2stimSequence(messages)
+    stim_ts = unwrap(stim_ts.astype(np.float64))
+
+    import pickle
+    pickle.dump(dict(data=np.append(X,data_ts[:,np.newaxis],-1),stim=np.append(Me,stim_ts[:,np.newaxis],-1)),open('pp_lmbci.pk','wb'))
+
+    # up-sample to stim rate
+    Y, stim_samp = upsample_stimseq(data_ts, Me, stim_ts, objIDs)
+    Y_ts = np.zeros((Y.shape[0],),dtype=int); 
+    Y_ts[stim_samp]=stim_ts
+    if verb >= 0: print("Y={} @{}Hz".format(Y.shape,fs),flush=True)
+
+    # slice into trials
+    # isi = interval *before* every stimulus --
+    #  include data-start so includes 1st stimulus
+    isi = np.diff(np.concatenate((data_ts[0:1],stim_ts,data_ts[-2:-1]),axis=0))
+    #print('isi={}'.format(isi))
+    # get trial indices in stimulus messages as sufficiently large inter-stimulus gap
+    # N.B. this is the index in stim_ts of the *start* of the new trial
+    trl_stim_idx = np.flatnonzero(isi > iti_ms)
+    # get duration of stimulus in each trial, in milliseconds (rather than number of stimulus events)
+    trl_dur = stim_ts[trl_stim_idx[1:]-1] - stim_ts[trl_stim_idx[:-1]]
+    print('{} trl_dur (ms) : {}'.format(len(trl_dur),np.diff(trl_dur)))
+    # estimate the best trial-length to use
+    if trlen_ms is None:
+        trlen_ms = np.percentile(trl_dur,90)
+    # strip any trial too much shorter than trlen_ms (50%)
+    keep = np.flatnonzero(trl_dur>trlen_ms*.2)
+    print('Got {} trials, keeping {}'.format(len(trl_stim_idx)-1,len(keep)))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     # re-compute the trlen_ms for the good trials
     trl_stim_idx = trl_stim_idx[keep]
 
     # get the trial starts as indices & ms into the data array
     trl_samp_idx = stim_samp[trl_stim_idx]
+<<<<<<< HEAD
     trl_ts       = stim_ts[trl_stim_idx]
     trl_data_ts  = data_ts[trl_samp_idx]
     if np.max(np.abs(trl_ts-trl_data_ts)) > 20: # sanity check the trial alignment info
@@ -165,6 +252,12 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, load_from_cac
 
     if verb>1 : print('{} trl_dur (samp): {}'.format(len(trl_samp_idx),np.diff(trl_samp_idx)))
     if verb>1 : print('{} trl_dur (ms) : {}'.format(len(trl_ts),np.diff(trl_ts)))
+=======
+    trl_ts       = stim_ts[trl_stim_idx]   
+
+    print('{} trl_dur (samp): {}'.format(len(trl_samp_idx),np.diff(trl_samp_idx)))
+    print('{} trl_dur (ms) : {}'.format(len(trl_ts),np.diff(trl_ts)))
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     # compute the trial start/end relative to the trial-start
     trlen_samp  = int(trlen_ms *  fs / 1000)
@@ -451,6 +544,7 @@ def make_coords(dim_names=('trial','time','channel'),dim_coords=(None,None,None)
 
 def testcase():
     from mindaffectBCI.decoder.offline.load_mindaffectBCI import load_mindaffectBCI
+<<<<<<< HEAD
     from mindaffectBCI.decoder.analyse_datasets import plot_trial
     source = askloadsavefile(initialdir=os.path.dirname(os.path.abspath(__file__)))
 
@@ -464,6 +558,13 @@ def testcase():
     ch_names = coords[-1]['coords']
 
     plot_trial(X,Y,fs,ch_names,show=True)
+=======
+    print("Loading: {}".format(sessfn))
+    X, Y, coords = load_mindaffectBCI(sessfn, fs_out=100, regress=False)
+    times = coords[1]['coords']
+    fs = coords[1]['fs']
+    ch_names = coords[2]['coords']
+>>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
     print("X({}){}".format([c['name'] for c in coords],X.shape))
     print("Y={}".format(Y.shape))
