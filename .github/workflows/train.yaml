@@ -23,7 +23,6 @@ jobs:
           
           echo "\n## Model Performance" >> report.md
           echo "Model performance metrics are on the plot below." >> report.md
-          
-          cml-publish mindaffectBCI_decoding_curve.png --md >> report.md
+
           
           cml-send-comment report.md
