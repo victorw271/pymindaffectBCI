@@ -16,7 +16,7 @@ jobs:
           
           git fetch --prune
           
-          dvc metrics diff --show-md open-source > report.md
+          dvc metrics diff --show-md mlops > report.md
           
           echo "## Model Metrics" > report.md
           cat metrics.txt >> report.md
