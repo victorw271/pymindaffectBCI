@@ -10,7 +10,7 @@ print("Got {} datasets\n".format(len(dataset_files))) # Got 16 datasets
 
 # Analysis
 analyse_datasets('mindaffectBCI',dataset_args=dict(exptdir=datasetsdir),
-                 loader_args=dict(fs_out=100,stopband=((45,65),(5,25,'bandpass'))),
+                 loader_args=dict(fs_out=100,stopband=((1,2),(3,100,'bandpass'))),
                  preprocess_args=None,
                  model='cca',test_idx=slice(10,None),clsfr_args=dict(tau_ms=450,evtlabs=('re','fe'),rank=1))
 
