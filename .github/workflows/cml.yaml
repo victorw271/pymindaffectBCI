@@ -1,4 +1,4 @@
-name: mlops-exaple-tensorflow-regression
+name: MLOps-FH_Pipeline2
 on: [push]
 jobs:
   run:
@@ -14,7 +14,8 @@ jobs:
           pip install -r requirements.txt
           python FH_Pipeline2.py
           
-          echo "## Model Metrics" > report.md
+          echo "## OUTPUT FROM CML.YAML" > report.md
+          echo "\n## Model Metrics" > report.md
           cat metrics.txt >> report.md
           
           echo "\n## Model Performance" >> report.md
