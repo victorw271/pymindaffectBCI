@@ -5,27 +5,50 @@
 import json
   
   
-# the file to be converted to 
-# json format
+# the file to be converted
 filename = 'metrics.txt'
   
-# dictionary where the lines from
-# text will be stored
+# resultant dictionary
 dict1 = {}
   
-# creating dictionary
+# fields in the sample file 
+fields =['name', 'designation', 'age', 'salary']
+  
 with open(filename) as fh:
+      
   
+      
+    # count variable for employee id creation
+    l = 1
+      
     for line in fh:
+          
+        # reading line by line from the text file
+        description = list( line.strip().split(None, 4))
+          
+        # for output see below
+        print(description) 
+          
+        # for automatic creation of id for each employee
+        sno ='emp'+str(l)
+      
+        # loop variable
+        i = 0
+        # intermediate dictionary
+        dict2 = {}
+        while i<len(fields):
+              
+                # creating dictionary for each employee
+                dict2[fields[i]]= description[i]
+                i = i + 1
+                  
+        # appending the record of each employee to
+        # the main dictionary
+        dict1[sno]= dict2
+        l = l + 1
   
-        # reads each line and trims of extra the spaces 
-        # and gives only the valid words
-        command, description = line.strip().split(None, 1)
   
-        dict1[command] = description.strip()
-  
-# creating json file
-# the JSON file is named as test1
+# creating json file        
 out_file = open("metrics.json", "w")
-json.dump(dict1, out_file, indent = 4, sort_keys = False)
+json.dump(dict1, out_file, indent = 4)
 out_file.close()
