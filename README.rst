@@ -1,5 +1,5 @@
-mindaffectBCI
-=============
+mindaffectBCI: test actions
+============= 
 This repository contains the python SDK code for the Brain Computer Interface (BCI) developed by the company `Mindaffect <https://mindaffect.nl>`_.
 
 <<<<<<< HEAD
@@ -148,7 +148,11 @@ This repository is organized roughly as follows:
   - `source <docs/source>`_ -- contains the source for the documentation, in particular this directory contains the juypter notebooks for tutorials on how to use the mindaffectBCI.
   
 <<<<<<< HEAD
+<<<<<<< HEAD
     - `online_bci.ipynb <docs/source/quickstart.ipynb>`_ - This `juypter <https://jupyter.org/>`_ notebook contains the code to run a complete on-line noise-tagging BCI
 =======
     - `online_bci.ipynb <docs/source/quickstart.ipynb>`_ - This `juypter <https://jupyter.org/>`_ notebook contains the code to run a complete on-line noise-tagging BCI
 >>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
+=======
+    - `online_bci.ipynb <docs/source/quickstart.ipynb>`_ - This `juypter <https://jupyter.org/>`_ notebook contains the code to run a complete on-line noise-tagging BCI
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931

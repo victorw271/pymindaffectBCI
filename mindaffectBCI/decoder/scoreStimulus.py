@@ -1,9 +1,13 @@
 <<<<<<< HEAD
 #  Copyright (c) 2019 MindAffect B.V.
+<<<<<<< HEAD
 =======
 #  Copyright (c) 2019 MindAffect B.V. 
 >>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 #  Author: Jason Farquhar <jason@mindaffect.nl>
+=======
+#  Author: Jason Farquhar <jadref@gmail.com>
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify

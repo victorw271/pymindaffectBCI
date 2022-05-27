@@ -4,4 +4,8 @@ numpy>=1.0.2
 pyglet>=1.5.0
 scikit-learn>=0.22.2.post1
 scipy>=1.0.1
+<<<<<<< HEAD
 mindaffectBCI
+=======
+pandas
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931

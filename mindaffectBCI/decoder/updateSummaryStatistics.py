@@ -279,7 +279,7 @@ def updateCxy(Cxy, X, Y, stimTimes=None, tau=None, wght=1, offset=0, center=Fals
             Ye = Y[:, -offset:inner_len-offset, ...] # shift fowards and shrink
             if offset < -tau: # zero pad to size
                 pad = np.zeros(Y.shape[:1]+(inner_len-Ye.shape[1],)+Y.shape[2:], dtype=Y.dtype)
-                Ye = np.append(Ye,pad,1)        
+                Ye = np.append(Ye,pad,1)
         elif offset>0: # shift and pad
             Ye = Y[:, :inner_len-offset, ...] # shrink
             pad = np.zeros(Y.shape[:1]+(inner_len-Ye.shape[1],)+Y.shape[2:], dtype=Y.dtype)
@@ -1252,6 +1252,9 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
         Y_TSy ([type]): raw stimulus sequence
         fs (float, optional): sample rate of data and stimulus. Defaults to None.
         ch_names (list-of-str, optional): channel names for X. Defaults to None.
+        evtlabs (list-of-str, optional): names for the event-types. Defaults to None.
+        outputs (list-of-str, optional): names for the outputs. Defaults to None.
+        times (list-of-float, optional): time in seconds for the samples dim. Defaults to None.
     """    
     import matplotlib.pyplot as plt
 <<<<<<< HEAD
@@ -1316,7 +1319,7 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
                 for y in range(Y_TSy.shape[2]):
                     tmp = Y_TSy[i,...,y].ravel() / np.max(Y_TSy)
                     if tmp.size == times.size:
-                        plt.plot(times[:trlen],tmp+y+nd*linespace+2,'.-',label='Y {}'.format(y))
+                        plt.plot(times[:trlen],tmp[:trlen]+y+nd*linespace+2,'.-',label='Y {}'.format(y))
                     else:
                         plt.plot(tmp+y+nd*linespace+2,'.-',label='Y {}'.format(y))
 
@@ -1329,6 +1332,7 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
                     for e in range(Y_TSy.shape[-1]):
                         evt = evtlabs[e] if evtlabs is not None and e < len(evtlabs) else e
                         tmp = Y_TSy[i,...,y,e] / np.max(Y_TSy)
+<<<<<<< HEAD
                         plt.plot(times[:trlen],tmp.ravel()+y+nd*linespace+2+e+y*Y_TSy.shape[2],'.-',label='Y {}:{}'.format(out,evt))
 =======
     print(Y_TSy.shape)
@@ -1356,6 +1360,9 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
                         tmp = Y_TSy[i,...,y,e] / np.max(Y_TSy)
                         plt.plot(times,tmp+y+X_TSd.shape[-1]*linespace+2+e,'.-',label='Y {}:{}'.format(out,evt))
 >>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
+=======
+                        plt.plot(times[:trlen],tmp[:trlen].ravel()+y+nd*linespace+2+e+y*Y_TSy.shape[2],'.-',label='Y {}:{}'.format(out,evt))
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
 
         plt.title('Trl {}'.format(i))
         plt.grid(True)
@@ -1368,6 +1375,7 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
     if show is not None: plt.show(block=show)
 
 
+<<<<<<< HEAD
 def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch_names=None, 
              axis:int=-1, plottype='plot', offset:int=0, ylim=None, suptitle:str=None, show:bool=None):
 =======
@@ -1382,13 +1390,41 @@ def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None
     erp = (nY, nE, tau, d) current per output ERPs
     '''
 <<<<<<< HEAD
+=======
+def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch_names=None, ch_pos=None,
+             axis:int=-1, plottype='plot', offset:int=0, offset_ms:float=None, ylim=None, suptitle:str=None, show:bool=None):
+    """    Make a multi-plot of the event ERPs (as stored in erp)
+
+    Args:
+        erp_yetd (_type_): The ERP to be ploted with shape (#outputs, #events-types, #samples, #channels)
+        evtlabs (list-of-str, optional): names for the event-types. Defaults to None.
+        outputs (list-of-str, optional): names for the outputs. Defaults to None.
+        times (list-of-float, optional): time in seconds for the samples dim. Defaults to None.
+        fs (float, optional): sample rate of the data. Defaults to None.
+        ch_names (list-of-str, optional): names for the channels. Defaults to None.
+        ch_pos (list-of-2tuple, optional): 2d position for the channels for plot positioning.  If None then attempt to get these positions from the channel-names. Defaults to None.
+        axis (int, optional): axis of ERP to slice to make individual plots.  If axis=-2 and we have position info then make a spatially distributed plot. Defaults to -1.
+        plottype (str, optional): type of plot to make.  One of: 'plot'=line-plot, 'plott'=line plot with axes swapped, 'image'=image. Defaults to 'plot'.
+        offset (int, optional): 0-time offset in samples. Defaults to 0.
+        offset_ms (float, optional): 0-time offset in milliseconds. Defaults to None.
+        ylim (2-tuple, optional): y-limits for the sub-plots.  If None auto-fit to data. Defaults to None.
+        suptitle (str, optional): super-title for the plot. Defaults to None.
+        show (bool, optional): If not None, call plt.show() when plot is ready with block=show. Defaults to None.
+    """
+    import matplotlib.pyplot as plt
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
 
     # ensure 4-d
     if erp_yetd.ndim<4:
         erp_yetd=erp_yetd.reshape( (1,)*(4-erp_yetd.ndim)+erp_yetd.shape)
+    elif erp_yetd.ndim>4:
+        # make 4d
+        print("Warning: extra dims compressed into event types..")
+        erp_yetd=np.moveaxis(erp_yetd,-2,2) # shift features (dim-2) before events
+        #evtlabs=None
 
-    nevt = erp_yetd.shape[1] if erp_yetd.ndim>2 else 1
-    nout = erp_yetd.shape[0] if erp_yetd.ndim>3 else 1
+    nevt = erp_yetd.shape[-3] if erp_yetd.ndim>2 else 1
+    nout = np.prod(erp_yetd.shape[:-3]) if erp_yetd.ndim>3 else 1
 
 =======
     nevt = erp.shape[-3]
@@ -1399,17 +1435,30 @@ def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None
     if evtlabs is None:
         evtlabs = ["{}".format(i) for i in range(nevt)]
     if times is None:
-        times = list(range(offset,erp_yetd.shape[2]+offset))
+        times = list(range(erp_yetd.shape[-2]))
+        if offset is not None:
+            times = [ t+offset for t in times ]
         if fs is not None:
             times = [ t/fs for t in times ]
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+            if offset_ms is not None:
+                times = [ t + offset_ms / 1000 for t in times ]
+
+    if ch_pos is None and ch_names is not None:
+        ch_pos, iseeg = get_ch_pos(ch_names)
+        if np.sum(iseeg)<len(ch_names)*.7:
+            print("Warning: couldn't match channel names....")
+            ch_pos, iseeg = None, None
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
 
     if ch_names is None:
         ch_names = ["{}".format(i) for i in range(erp_yetd.shape[-1])]
 
     if erp_yetd.shape[0]>1 :
         print("Multiple Y's merged!")
-    erp_etd = erp_yetd.reshape((-1,)+erp_yetd.shape[2:])
+    erp_etd = erp_yetd.reshape((-1,)+erp_yetd.shape[-2:])
     # update evtlabs with the outputs info
     if nevt>1 and nout>1:
         evtlabs = [ "{}:{}".format(o,e) for o in outputs for e in evtlabs]
@@ -1449,14 +1498,18 @@ def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None
     if axis<0:
 <<<<<<< HEAD
         axis = erp_etd.ndim+axis
-    clim = [np.nanmedian(np.nanmin(erp_etd,axis=(1,2))), np.nanmedian(np.nanmax(erp_etd,axis=(1,2)))]
+    clim = [np.nanpercentile(erp_etd,5), np.nanpercentile(erp_etd,95)]
+    #clim = [np.nanmedian(np.nanmin(erp_etd,axis=(0,1))), np.nanmedian(np.nanmax(erp_etd,axis=(0,1)))]
     if clim[0]==clim[1]: clim=[-1,1]
     if any(np.isnan(clim)) or any(np.isinf(clim)): clim=None
+<<<<<<< HEAD
 =======
         axis = erp.ndim+axis
     clim = [np.min(erp.flat), np.max(erp.flat)]
 >>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
     import matplotlib.pyplot as plt
+=======
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
 
     # print("erp_etd={}".format(erp_etd.shape))
     # print(" {}, {}, {} ".format(icoords, jcoords, kcoords))
@@ -1465,15 +1518,23 @@ def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None
     ncols = int(np.ceil(np.sqrt(erp_etd.shape[axis])))
     nrows = int(np.ceil(erp_etd.shape[axis]/ncols))
     # make the bottom left axis to share its limits..
-    axploti = ncols*(nrows-1)
-    ax = plt.subplot(nrows,ncols,axploti+1)
+    if ch_pos is not None:
+        from mindaffectBCI.decoder.plot_utils.posplot import posplot
+        axploti = np.argmin(np.sum(ch_pos,axis=1))
+        ax = posplot(XYs=ch_pos, idx=axploti, sizes='equal')
+    else:
+        axploti = ncols*(nrows-1)
+        ax = plt.subplot(nrows,ncols,axploti+1)
     #fig, plts = plt.subplots(nrows, ncols, sharex='all', sharey='all', squeeze=False)
     for ci in range(erp_etd.shape[axis]):
         # make the axis
         if ci==axploti: # common axis plot
             pl = ax
         else: # normal plot
-            pl = plt.subplot(nrows,ncols,ci+1,sharex=ax, sharey=ax) # share limits
+            if ch_pos is not None:
+                pl = posplot(XYs=ch_pos, idx=ci, sizes='equal')
+            else:
+                pl = plt.subplot(nrows,ncols,ci+1,sharex=ax, sharey=ax) # share limits
             plt.tick_params(labelbottom=False,labelleft=False) # no labels
 
         # get the slice for the data to plot,  and it's coords
@@ -1540,13 +1601,34 @@ def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None
         plt.show(block=show)
 
 def get_ch_pos(ch_names):
-    print("trying to get pos from cap file!")
+    """give a set of channel names, get the 2d positions by matching to 1010 names
+
+    Args:
+        ch_names (list-of-str): channel names to get position for
+
+    Returns:
+        list-of-2tuple, list-of-bool: 2d-channel positions, iseeg match status
+    """    
+    #print("trying to get pos from cap file!")
     from mindaffectBCI.decoder.readCapInf import getPosInfo
     cnames, xy, xyz, iseeg =getPosInfo(ch_names)
     return xy, iseeg
 
 
 def topoplot(A,ch_names=None, ch_pos=None, ax=None, levels=None, cRng=None, channel_labels:bool=True, cmap:str='bwr', colorbar:bool=True):
+    """make a topographic image plot of the data on an iconic 'head'
+
+    Args:
+        A (ndarray): the data to plot with shape (#channels)
+        ch_names (list-of-str, optional): The names of the channels in A. Defaults to None.
+        ch_pos (list-of-2tuple, optional): The 2d position of the channels.  If None then attempt to find these by matching ch_names to the 1010 positions. Defaults to None.
+        ax (Axes, optional): An axes to use for the plot.  If None make new axis. Defaults to None.
+        levels (_type_, optional): List of levels for contour lines in the plot. Defaults to None.
+        cRng (2-tuple-of-float, optional): color range for the topoplot. Defaults to None.
+        channel_labels (bool, optional): If True then show channel labels on the topoplot. Defaults to True.
+        cmap (str, optional): colormap to use for the image. Defaults to 'bwr'.
+        colorbar (bool, optional): If True then show colorbar beside the topoplot. Defaults to True.
+    """    
     import matplotlib.pyplot as plt
     if ch_pos is None and not ch_names is None:
         try:
@@ -1679,7 +1761,7 @@ def plot_factoredmodel(A, R, S=None,
 >>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
         # try to load position info from capfile
         try: 
-            print("trying to get pos from cap file!")
+            #print("trying to get pos from cap file!")
             from mindaffectBCI.decoder.readCapInf import getPosInfo
             cnames, xy, xyz, iseeg =getPosInfo(ch_names)
             if all(iseeg):
@@ -1737,14 +1819,14 @@ def plot_factoredmodel(A, R, S=None,
 
         #pA.title.set_text("Spatial {} #{}".format(spatial_filter_type,ci))
 
-def plot_temporal_components(R,fs=1,ncols=2,nrows=None,normalize=False):
+def plot_temporal_components(R,fs=1,ncols=2,nrows=None,normalize=False,times=None,evtlabs=None):
     import matplotlib.pyplot as plt
     R=R.copy()
     if R.ndim > 3:
         if R.shape[0]==1: R = R[0, ...] # remove uncessary dim
     if R.ndim < 3:
         R = R[np.newaxis, :]
-    if nrows is None: nrows=R_keyt.shape[0]
+    if nrows is None: nrows=R.shape[0]
 
     if times is None:
         times = np.arange(R.shape[-1])
@@ -1866,36 +1948,36 @@ def plot_per_output_temporal_components(R_kyet,fs=1,ncols=2,nrows=None,normalize
 
 
 
-def plot_factoredmodel(A, R, S=None, 
-                        evtlabs=None, times=None, ch_names=None, ch_pos=None, fs=None, 
-                        offset_ms=None, offset=None, 
-                        spatial_filter_type="Filter", temporal_filter_type="Filter", 
-                        norm_temporal:bool=False, norm_spatial:bool=False, suptitle=None, ncol=2, 
-                        channel_labels:bool=True, colorbar:bool=True, show:bool=None):
-    '''
-    Make a multi-plot of a factored model
-    A_kd = k components and d sensors
-    R_ket = k components, e events, tau samples response-duration
-    '''
-    import matplotlib.pyplot as plt
+# def plot_factoredmodel(A, R, S=None, 
+#                         evtlabs=None, times=None, ch_names=None, ch_pos=None, fs=None, 
+#                         offset_ms=None, offset=None, 
+#                         spatial_filter_type="Filter", temporal_filter_type="Filter", 
+#                         norm_temporal:bool=False, norm_spatial:bool=False, suptitle=None, ncol=2, 
+#                         channel_labels:bool=True, colorbar:bool=True, show:bool=None):
+#     '''
+#     Make a multi-plot of a factored model
+#     A_kd = k components and d sensors
+#     R_ket = k components, e events, tau samples response-duration
+#     '''
+#     import matplotlib.pyplot as plt
 
-    print("A={} R={}".format(A.shape if A is not None else None, R.shape if R is not None else None ))
-    ncols = ncol #int(np.ceil(np.sqrt(A.shape[0])))
-    nrows = A.shape[0] if A is not None else R.shape[0] #int(np.ceil(A.shape[0]/ncols))
+#     #print("A={} R={}".format(A.shape if A is not None else None, R.shape if R is not None else None ))
+#     ncols = ncol #int(np.ceil(np.sqrt(A.shape[0])))
+#     nrows = A.shape[0] if A is not None else R.shape[0] #int(np.ceil(A.shape[0]/ncols))
 
-    # plot the spatial components
-    if A is not None:
-        plot_spatial_components(A,ch_names,ncols,channel_labels=channel_labels,colorbar=colorbar, normalize=norm_temporal)
+#     # plot the spatial components
+#     if A is not None:
+#         plot_spatial_components(A,ch_names,ncols,channel_labels=channel_labels,colorbar=colorbar, normalize=norm_temporal)
 
-    # plot temmporal components
-    if R is not None:
-        plot_temporal_components(R,fs,ncols, normalize=norm_temporal)
-        #pR.title.set_text("Temporal {} #{}".format(temporal_filter_type,ci))
+#     # plot temmporal components
+#     if R is not None:
+#         plot_temporal_components(R,fs,ncols, normalize=norm_temporal)
+#         #pR.title.set_text("Temporal {} #{}".format(temporal_filter_type,ci))
 
-    if suptitle:
-        plt.suptitle(suptitle)
-    if show is not None:
-        plt.show(block=show)
+#     if suptitle:
+#         plt.suptitle(suptitle)
+#     if show is not None:
+#         plt.show(block=show)
 
 
 
@@ -1905,14 +1987,36 @@ def plot_factoredmodel(A, R, S=None,
                         spatial_filter_type="Filter", temporal_filter_type="Filter", 
                         norm_temporal:bool=False, norm_spatial:bool=False, suptitle=None, ncol=2, 
                         channel_labels:bool=True, colorbar:bool=False, show:bool=None):
-    '''
-    Make a multi-plot of a factored model
-    A_kd = k components and d sensors
-    R_ket = k components, e events, tau samples response-duration
-    '''
+    """_summary_
+
+    Args:
+        A (ndarray): spatial-factor, with shape A_kd =  k components and d sensors
+        R (ndarray): temporal-factor, with shape R_ket = k components, e events, tau samples response-duration
+        S (list-of-float, optional): Weighting for each of the k-components of the model. Defaults to None.
+        evtlabs (list-of-str, optional): names for the event-types. Defaults to None.
+        outputs (list-of-str, optional): names for the outputs. Defaults to None.
+        times (list-of-float, optional): time in seconds for the samples dim. Defaults to None.
+        fs (float, optional): sample rate of the data. Defaults to None.
+        ch_names (list-of-str, optional): names for the channels. Defaults to None.
+        ch_pos (list-of-2tuple, optional): 2d position for the channels for plot positioning.  If None then attempt to get these positions from the channel-names. Defaults to None.
+        axis (int, optional): axis of ERP to slice to make individual plots.  If axis=-2 and we have position info then make a spatially distributed plot. Defaults to -1.
+        plottype (str, optional): type of plot to make.  One of: 'plot'=line-plot, 'plott'=line plot with axes swapped, 'image'=image. Defaults to 'plot'.
+        offset (int, optional): 0-time offset in samples. Defaults to 0.
+        offset_ms (float, optional): 0-time offset in milliseconds. Defaults to None.
+        ylim (2-tuple, optional): y-limits for the sub-plots.  If None auto-fit to data. Defaults to None.
+        suptitle (str, optional): super-title for the plot. Defaults to None.
+        show (bool, optional): If not None, call plt.show() when plot is ready with block=show. Defaults to None.
+        channel_labels (bool, optional): If True then show channel labels on the topoplot. Defaults to True.
+        colorbar (bool, optional): If True then show colorbar beside the topoplot. Defaults to True.
+        spatial_filter_type (str, optional): Label for the type of spatial component shown. Defaults to "Filter".
+        temporal_filter_type (str, optional): Label for the type of temporal component shown. Defaults to "Filter".
+        norm_temporal (bool, optional): If True then normalize the temporal component to unit length before plotting. Defaults to False.
+        norm_spatial (bool, optional): If True then normalize the spatial component to unit length before plotting. Defaults to False.
+        ncol (int, optional): Number of columns to use in plt.subplot. Defaults to 2.
+    """
     import matplotlib.pyplot as plt
 
-    print("A={} R={}".format(A.shape if A is not None else None, R.shape if R is not None else None ))
+    #print("A={} R={}".format(A.shape if A is not None else None, R.shape if R is not None else None ))
     ncols = ncol #int(np.ceil(np.sqrt(A.shape[0])))
     nrows = A.shape[0] if A is not None else R.shape[0] #int(np.ceil(A.shape[0]/ncols))
 
@@ -1930,12 +2034,14 @@ def plot_factoredmodel(A, R, S=None,
                 print("Warning: channel names don't match dimension size!")
                 if len(ch_names)>A.shape[-1]*.75:
                     ch_names=ch_names[:A.shape[-1]]
+                elif A.shape[-1]%len(ch_names)==0:
+                    A = A.reshape((A.shape[0],-1,A.shape[-1]))
                 else:
                     ch_names=None
         if ch_pos is None and not ch_names is None:
             # try to load position info from capfile
             try: 
-                print("trying to get pos from cap file!")
+                #print("trying to get pos from cap file!")
                 from mindaffectBCI.decoder.readCapInf import getPosInfo
                 cnames, xy, xyz, iseeg =getPosInfo(ch_names)
                 if all(iseeg):
@@ -1972,9 +2078,12 @@ def plot_factoredmodel(A, R, S=None,
             # make the spatial plot
             sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.aabs(R[ci,...]))]) # normalize directions
             try:
-                topoplot(A[ci,:]*sign,ch_names=ch_names,ch_pos=ch_pos,ax=pA,levels=levels,colorbar=colorbar, channel_labels=channel_label)
+                if A.ndim>2:
+                    topoplots(A[ci,...].T*sign,ch_names=ch_names,ch_pos=ch_pos,ax=pA,levels=levels,colorbar=colorbar, channel_labels=channel_label)
+                else:
+                    topoplot(A[ci,...].T*sign,ch_names=ch_names,ch_pos=ch_pos,ax=pA,levels=levels,colorbar=colorbar, channel_labels=channel_label)
             except:
-                pA.plot(ch_names,A[ci,:]*sign,'.-')
+                pA.plot(ch_names,A[ci,...].T*sign,'.-')
                 pA.set_ylim((-cRng,cRng))
                 pA.grid(True)
 
@@ -2291,6 +2400,13 @@ def testCases():
     
 if __name__=="__main__":
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+    import matplotlib.pyplot as plt
+
+    plot_erp(np.random.standard_normal(size=(1,1,20,4,8)),ch_names=['FPz','C3','Cz','C4','CP3','CPz','CP4','Pz'])
+    plt.show(block=True)
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
 
     topoplots(np.random.standard_normal((5,8)),ch_names=['FPz','C3','Cz','C4','CP3','CPz','CP4','Pz'])
 

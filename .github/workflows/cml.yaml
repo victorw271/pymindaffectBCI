@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 name: mlops-exaple-tensorflow-regression
+=======
+name: MLOps-offline_regression_testing
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
 on: [push]
 jobs:
   run:
@@ -12,6 +16,7 @@ jobs:
         run: |
           # Your ML workflow goes here
           pip install -r requirements.txt
+<<<<<<< HEAD
           python FH_Pipeline2.py
           
           echo "## Model Metrics" > report.md
@@ -22,4 +27,15 @@ jobs:
           
           cml-publish mindaffectBCI_decoding_curve.png --md >> report.md
           
+=======
+          pip install --upgrade pip
+          pip install -e .
+          
+          python mindaffectBCI/decoder/offline_regression_testing.py
+          python csv2text.py
+          
+          echo "## OFFLINE REGRESSION TESTING" > report.md
+          cat metrics.txt >> report.md
+          
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
           cml-send-comment report.md

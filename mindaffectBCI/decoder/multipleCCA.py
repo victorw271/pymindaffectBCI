@@ -141,7 +141,7 @@ def multipleCCA(Cxx=None, Cxy=None, Cyy=None,
                 isqrtCyy_te_o, sqrtCyy_te_o = robust_whitener(Cyy2d[mi, :, :], reg[1], rcond[1], symetric, alg=whiten_alg)
             isqrtCyyCyxmisqrtCxx_om = isqrtCyy_te_o.T @ CyxmisqrtCxx_te_m
         else:
-            isqrtCyyCyxmisqrtCxx_om = CyxmisqrtCxx_te_d
+            isqrtCyyCyxmisqrtCxx_om = CyxmisqrtCxx_te_m
 
         # SVD for the double  whitened cross covariance
         #N.B. Rm=((nE*tau),rank),lm=(rank),Wm=(rank,d)

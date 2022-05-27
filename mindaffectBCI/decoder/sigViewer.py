@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 #  Copyright (c) 2019 MindAffect B.V. 
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -56,6 +56,7 @@ def run(ui: UtopiaDataInterface=None, host=None, timeout_ms:float=np.inf,
         ui=UtopiaDataInterface(U=U, data_preprocessor=data_preprocessor, send_signalquality=True)#, sample2timestamp='none')
         ui.connect(host)
         ui.sendMessage(Subscribe(None, "DEMSNQ"))
+<<<<<<< HEAD
 =======
 from mindaffectBCI.decoder.UtopiaDataInterface import UtopiaDataInterface, stim2eventfilt, butterfilt_and_downsample
    
@@ -72,6 +73,8 @@ def run(ui: UtopiaDataInterface=None, host=None, timeout_ms:float=np.inf,
         ui.connect(host)
 >>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 
+=======
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
     ui.update()
 
     # initialize the plot window
@@ -106,6 +109,8 @@ def run(ui: UtopiaDataInterface=None, host=None, timeout_ms:float=np.inf,
     # start the render loop
     fig.show()
     t0 = ui.getTimeStamp()
+    ui.sendMessage(Subscribe(None, "DEMSNQ"))
+
     while ui.getTimeStamp() < t0+timeout_ms:
 
         # exit if figure is closed

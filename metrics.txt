@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 
  0) datasets\mindaffectBCI_noisetag_bci_cyton_201026_1536.txt 
@@ -15,3 +16,28 @@ Ave-DC
            StopErr  1.00  0.65  0.45  0.30  0.30  0.25  0.25  0.25   AUSC 46.2
      StopThresh(P)  0.79  0.68  0.54  0.43  0.40  0.35  0.37  0.37   SSAE 30.9
 
+=======
+## kaggle
+|file | clsfr | AUDC | ave-AUDC | baseline-AUDC |
+|---|---|---|---|---|
+|C:\Users\freek\Desktop\data\external_data/kaggle\mindaffectBCI_noisetag_bci_cyton_201026_1536.txt | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 56.667 | 45.403 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/kaggle\mindaffectBCI_noisetag_bci_cyton_201026_1540.txt | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 54.75 | 45.403 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/kaggle\mindaffectBCI_noisetag_bci_cyton_unity_201027_1112.txt | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 36.667 | 45.403 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/kaggle\mindaffectBCI_ssvep_bci_201117_1209.txt | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 46.0 | 45.403 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/kaggle\mindaffectBCI_ssvep_bci_201117_1219.txt | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 57.833 | 45.403 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/kaggle\mindaffectBCI_ssvep_bci_201117_1523.txt | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 20.5 | 45.403 | 51.9 |
+## lowlands
+|file | clsfr | AUDC | ave-AUDC | baseline-AUDC |
+|---|---|---|---|---|
+|C:\Users\freek\Desktop\data\external_data/lowlands\LL_eng_02_20170818_tr_train_1.mat | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 90.667 | 51.889 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/lowlands\LL_eng_03_20170818_tr_train_1.mat | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 34.667 | 51.889 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/lowlands\LL_eng_04_20170818_tr_train_1.mat | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 30.333 | 51.889 | 51.9 |
+## plos_one
+|file | clsfr | AUDC | ave-AUDC | baseline-AUDC |
+|---|---|---|---|---|
+|C:\Users\freek\Desktop\data\external_data/plos_one\s01\traindata.mat | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 28.718 | 24.0 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/plos_one\s02\traindata.mat | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 23.077 | 24.0 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/plos_one\s3\traindata.mat | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 20.256 | 24.0 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/plos_one\s4\traindata.mat | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 32.436 | 24.0 | 51.9 |
+|C:\Users\freek\Desktop\data\external_data/plos_one\s5\traindata.mat | PreprocessPipeline(stages=[('metainfoadder'; MetaInfoAdder(info={'fs': -1})); ('targetencoder'; TargetEncoder()); ('clsfr'; MultiCCA(tau_ms=450))]) | 15.513 | 24.0 | 51.9 |
+>>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
