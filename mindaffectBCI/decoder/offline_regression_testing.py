@@ -178,7 +178,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # Get data into csv file.
     ave_dc = score_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))['audc']
     data_int = np.transpose(np.array([filenames, [string_clsfr]*len(filenames), [str("%.3f" % x) for x in res['audc']], [str("%.3f" % ave_dc)]*len(filenames), [51.9]*len(filenames)]))
-    with open(name_file, 'w', newline='') as f:
+    with open('csv/'+name_file, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['file', 'clsfr', 'AUDC', 'ave-AUDC', 'baseline-AUDC'])
         writer.writerows(data_int)
@@ -192,40 +192,36 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     ## ---------------------------
     ## ---------------------------
     s = print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))
-    print("START")
+    
     for file in filenames:
-        # Parse filename such that it becomes e.g. '\LL_eng_02_20170818_tr_train_1.mat'
+        # Parse filename such that it becomes e.g. '\LL_eng_02_20170818_tr_train_1_mat.csv'
         fn = 'file'
         ll = file.split('lowlands')
         kg = file.split('kaggle')
         p1 = file.split('plos_one')
-        if len(ll) > 0:
-            fn = ll[1]+'.csv'
+        if len(ll) > 1:
+            print(ll)
+            fn = ll[1]
             fn = fn.replace('\\', '_')
-            fn = fn.replace('.', '_')
-            # print(fn)
-        if len(kg) > 0:
-            fn = kg[1]+'.csv'
+            fn = fn.replace('.', '_')+'.csv'
+        if len(kg) > 1:
+            fn = kg[1]
             fn = fn.replace('\\', '_')
-            fn = fn.replace('.', '_')
-            # print(fn)
-        if len(p1) > 0:
-            fn = p1[1]+'.csv'
+            fn = fn.replace('.', '_')+'.csv'
+        if len(p1) > 1:
+            fn = p1[1]
             fn = fn.replace('\\', '_')
-            fn = fn.replace('.', '_')
-            # print(fn)
-        print(fn)
+            fn = fn.replace('.', '_')+'.csv'
+
+        # Try writing the csv file with the name of the file that is analysed
         try:
             data_int = np.array([s])
-            with open(fn, 'w', newline='') as f:
+            with open('csv/'+fn, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['thing'])
                 writer.writerows(data_int)
-                print("busy")
         except:
-            print("FOUT")
-
-
+            print("Error writing "+file)
 
     return res
 
@@ -258,10 +254,10 @@ def analyse_datasets_test(dataset:str, dataset_args:dict, loader_args:dict, pipe
 
 def regression_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv):
     ''' run cross datasets test, with fallback for older non-supported code paths. '''
-    try:
-        res = pipeline_test(dataset,dataset_args,loader_args,pipeline,cv)
-    except:
-        res = None
+    # try:
+    res = pipeline_test(dataset,dataset_args,loader_args,pipeline,cv)
+    # except:
+    #     res = None
     return res
 
 
