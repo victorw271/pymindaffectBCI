@@ -1,3 +1,4 @@
+from tkinter.font import ROMAN
 from joblib import PrintTime
 import numpy as np
 import matplotlib.pyplot as plt
@@ -6,7 +7,7 @@ seed=0
 from mindaffectBCI.decoder.analyse_datasets import decoding_curve_GridSearchCV, datasets_decoding_curve_GridSearchCV, average_results_per_config, plot_decoding_curves
 from mindaffectBCI.decoder.preprocess_transforms import make_preprocess_pipeline
 from mindaffectBCI.decoder.offline.datasets import get_dataset
-from mindaffectBCI.decoder.decodingCurveSupervised import print_decoding_curve
+from mindaffectBCI.decoder.decodingCurveSupervised import print_decoding_curve, score_decoding_curve
 import random
 random.seed(seed)
 np.random.seed(seed)
@@ -128,15 +129,15 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
 
     # first make the base pipeline to run
     clsfr = make_preprocess_pipeline(pipeline)
-    print(clsfr)
+    # print(clsfr)
 
     # run this pipeline with all the settings.
     # N.B. set n_jobs=1 for pipeline debugging as it gives more informative error messages and stops at first error
     res = datasets_decoding_curve_GridSearchCV(clsfr,filenames, loader, loader_args=loader_args, cv=cv, 
                                             n_jobs=5, cv_clsfr_only=False, label='taums')
 
-    print("Ave-DC")
-    print(print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0])))  
+    # print("Ave-DC")
+    # print(print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0])))  
 
     plt.figure()
     plot_decoding_curves(res['decoding_curve'],labels=res['filename'])
@@ -150,6 +151,9 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     #     print(print_decoding_curve(*dc))
 
 
+    ## ---------------------------
+    ## ---------------------------
+    # SAVE SUMMARY PER DATA REPO (kaggle, lowlands, etc.)
     ## ---------------------------
     ## ---------------------------
     # Save to a CSV file
@@ -172,7 +176,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     string_clsfr = string_clsfr.replace('  ', '')
 
     # Get data into csv file.
-    s, ave_dc = print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))
+    ave_dc = score_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))['audc']
     data_int = np.transpose(np.array([filenames, [string_clsfr]*len(filenames), [str("%.3f" % x) for x in res['audc']], [str("%.3f" % ave_dc)]*len(filenames), [51.9]*len(filenames)]))
     with open(name_file, 'w') as f:
         writer = csv.writer(f)
@@ -181,6 +185,43 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     ## ---------------------------
     ## ---------------------------
     
+
+    ## ---------------------------
+    ## ---------------------------
+    # SAVE TABLE PER DATASET FILE
+    ## ---------------------------
+    ## ---------------------------
+    print(*(average_results_per_config(res)['decoding_curve'][0]))
+    s = print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))
+    print("START")
+    print(filenames)
+    for file in filenames:
+        print(file)
+        # Parse filename such that it becomes e.g. '\LL_eng_02_20170818_tr_train_1.mat'
+        fn = file
+        if len(file.split('lowlands')) > 0:
+            fn = file.split('lowlands')[1]+'.csv'
+            fn = fn[1: -1]
+        if len(file.split('kaggle')) > 0:
+            fn = file.split('kaggle')[1]+'.csv'
+            fn = fn[1: -1]
+        if len(file.split('plos_one')) > 0:
+            fn = file.split('plos_one')[1]+'.csv'
+            fn = fn[1: -1]
+        data_int = np.array(s)
+
+        print(fn)
+
+        try:
+            with open(fn, 'w') as f:
+                writer = csv.writer(f)
+                writer.writerow(['thing'])
+                writer.writerows(data_int)
+                print("busy")
+        except:
+            print("FOUT")
+
+
 
     return res
 
