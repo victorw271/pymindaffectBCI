@@ -178,7 +178,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # Get data into csv file.
     ave_dc = score_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))['audc']
     data_int = np.transpose(np.array([filenames, [string_clsfr]*len(filenames), [str("%.3f" % x) for x in res['audc']], [str("%.3f" % ave_dc)]*len(filenames), [51.9]*len(filenames)]))
-    with open(name_file, 'w') as f:
+    with open(name_file, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['file', 'clsfr', 'AUDC', 'ave-AUDC', 'baseline-AUDC'])
         writer.writerows(data_int)
@@ -217,7 +217,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
         print(fn)
         try:
             data_int = np.array([s])
-            with open(fn, 'w') as f:
+            with open(fn, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['thing'])
                 writer.writerows(data_int)

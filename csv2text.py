@@ -5,9 +5,6 @@ files = ['kaggle', 'lowlands', 'plos_one']
 # Convert .csv into .txt with markdown for a table
 try:
     for fn in files:
-        df = pd.read_csv(fn+'.csv')
-        df.to_csv(fn+'.csv', index=False) 
-
         csv_file = fn+'.csv'
         txt_file = fn+'.txt'
         with open(txt_file, "w") as my_output_file:
