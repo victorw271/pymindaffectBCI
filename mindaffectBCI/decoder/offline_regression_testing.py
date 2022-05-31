@@ -200,7 +200,6 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
         kg = file.split('kaggle')
         p1 = file.split('plos_one')
         if len(ll) > 1:
-            print(ll)
             fn = ll[1]
             fn = fn.replace('\\', '_')
             fn = fn.replace('.', '_')+'.csv'
