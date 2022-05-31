@@ -8,7 +8,7 @@ try:
         csv_file = fn+'.csv'
         txt_file = fn+'.txt'
         with open(txt_file, "w") as my_output_file:
-            with open(csv_file, "r") as my_input_file:
+            with open('csv/'+csv_file, "r") as my_input_file:
                 [ my_output_file.write("|"+" | ".join(row)+' |\n') for row in csv.reader(my_input_file)]
             my_output_file.close()
 
@@ -19,11 +19,12 @@ try:
             contents = "".join(contents)
             f.write(contents)
 except:
-    print("Error opening files")
+    print("Error opening files 1")
     
 # Clear the file
 output = 'metrics.txt'
 open(output, 'w').close()
+
 try:
     for fn in files:
         input = fn+'.txt'
@@ -33,7 +34,5 @@ try:
             with open(input, "r") as my_input_file:
                 my_output_file.write("## "+fn+"\n")
                 [ my_output_file.write("".join(row)+'\n') for row in csv.reader(my_input_file)]
-
-
 except:
-    print("Error opening files")
+    print("Error opening files 2")
