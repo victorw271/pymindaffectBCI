@@ -191,28 +191,32 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # SAVE TABLE PER DATASET FILE
     ## ---------------------------
     ## ---------------------------
-    print(*(average_results_per_config(res)['decoding_curve'][0]))
     s = print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))
     print("START")
-    print(filenames)
     for file in filenames:
-        print(file)
         # Parse filename such that it becomes e.g. '\LL_eng_02_20170818_tr_train_1.mat'
-        fn = file
-        if len(file.split('lowlands')) > 0:
-            fn = file.split('lowlands')[1]+'.csv'
-            fn = fn[1: -1]
-        if len(file.split('kaggle')) > 0:
-            fn = file.split('kaggle')[1]+'.csv'
-            fn = fn[1: -1]
-        if len(file.split('plos_one')) > 0:
-            fn = file.split('plos_one')[1]+'.csv'
-            fn = fn[1: -1]
-        data_int = np.array(s)
-
+        fn = 'file'
+        ll = file.split('lowlands')
+        kg = file.split('kaggle')
+        p1 = file.split('plos_one')
+        if len(ll) > 0:
+            fn = ll[1]+'.csv'
+            fn = fn.replace('\\', '_')
+            fn = fn.replace('.', '_')
+            # print(fn)
+        if len(kg) > 0:
+            fn = kg[1]+'.csv'
+            fn = fn.replace('\\', '_')
+            fn = fn.replace('.', '_')
+            # print(fn)
+        if len(p1) > 0:
+            fn = p1[1]+'.csv'
+            fn = fn.replace('\\', '_')
+            fn = fn.replace('.', '_')
+            # print(fn)
         print(fn)
-
         try:
+            data_int = np.array([s])
             with open(fn, 'w') as f:
                 writer = csv.writer(f)
                 writer.writerow(['thing'])
