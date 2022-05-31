@@ -150,6 +150,8 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     #     print(print_decoding_curve(*dc))
 
 
+    ## ---------------------------
+    ## ---------------------------
     # Save to a CSV file
     # Find where the data came from
     name_file = 'no_data_found.csv'
@@ -176,6 +178,8 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
         writer = csv.writer(f)
         writer.writerow(['file', 'clsfr', 'AUDC', 'ave-AUDC', 'baseline-AUDC'])
         writer.writerows(data_int)
+    ## ---------------------------
+    ## ---------------------------
     
 
     return res
