@@ -1,7 +1,6 @@
-<<<<<<< HEAD
+
 from joblib import PrintTime
-=======
->>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
+
 import numpy as np
 import matplotlib.pyplot as plt
 # force random seed for reproducibility
