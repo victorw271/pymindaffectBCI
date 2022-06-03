@@ -41,7 +41,10 @@ dataroots = ['~/data',
             '/content/drive/Shareddrives',
             '/home/shared/drive/',
             'D://',
+<<<<<<< HEAD
             'C:\\Users\\freek\\Desktop\\data',
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
             '.',
             ]
 

@@ -258,11 +258,15 @@ def stim2event(M:np.ndarray, evtypes=('re','fe'), axis:int=-2, oM:np.ndarray=Non
                 raise ValueError("any feature only for axis==-2")   
             # any, means true if any target is true, N.B. use logical_or to broadcast
 <<<<<<< HEAD
+<<<<<<< HEAD
             F = np.any(F > 0, axis=-1, keepdims=True)
 <<<<<<< HEAD
 =======
             F = np.max(F, axis=-1, keepdims=True)
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+            F = np.max(F, axis=-1, keepdims=True)
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
             #F = np.repeat(F,repeats=M.shape[-1],axis=-1) # blow up to orginal size
             s2estate = modifier + s2estate
 =======

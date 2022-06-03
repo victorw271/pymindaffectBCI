@@ -57,6 +57,7 @@ def run(ui: UtopiaDataInterface=None, host=None, timeout_ms:float=np.inf,
         ui.connect(host)
         ui.sendMessage(Subscribe(None, "DEMSNQ"))
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
 from mindaffectBCI.decoder.UtopiaDataInterface import UtopiaDataInterface, stim2eventfilt, butterfilt_and_downsample
    
@@ -75,6 +76,8 @@ def run(ui: UtopiaDataInterface=None, host=None, timeout_ms:float=np.inf,
 
 =======
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
     ui.update()
 
     # initialize the plot window

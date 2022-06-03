@@ -1557,6 +1557,10 @@ def load_and_GridSearchCV(clsfr:BaseSequence2Sequence, filename, loader=load_min
         print("Running with {} parallel tasks, one-per-config".format(n_jobs))
         print("Submitting {} jobs:",end='')
 
+    if n_jobs>1:
+        print("Running with {} parallel tasks, one-per-config".format(n_jobs))
+        print("Submitting {} jobs:",end='')
+
     futures=[]
     with concurrent.futures.ProcessPoolExecutor(max_workers=n_jobs) as executor:
         # loop over analysis settings

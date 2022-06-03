@@ -1333,6 +1333,7 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
                         evt = evtlabs[e] if evtlabs is not None and e < len(evtlabs) else e
                         tmp = Y_TSy[i,...,y,e] / np.max(Y_TSy)
 <<<<<<< HEAD
+<<<<<<< HEAD
                         plt.plot(times[:trlen],tmp.ravel()+y+nd*linespace+2+e+y*Y_TSy.shape[2],'.-',label='Y {}:{}'.format(out,evt))
 =======
     print(Y_TSy.shape)
@@ -1363,6 +1364,9 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
 =======
                         plt.plot(times[:trlen],tmp[:trlen].ravel()+y+nd*linespace+2+e+y*Y_TSy.shape[2],'.-',label='Y {}:{}'.format(out,evt))
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+                        plt.plot(times[:trlen],tmp[:trlen].ravel()+y+nd*linespace+2+e+y*Y_TSy.shape[2],'.-',label='Y {}:{}'.format(out,evt))
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
         plt.title('Trl {}'.format(i))
         plt.grid(True)
@@ -1375,6 +1379,7 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
     if show is not None: plt.show(block=show)
 
 
+<<<<<<< HEAD
 <<<<<<< HEAD
 def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch_names=None, 
              axis:int=-1, plottype='plot', offset:int=0, ylim=None, suptitle:str=None, show:bool=None):
@@ -1391,6 +1396,8 @@ def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None
     '''
 <<<<<<< HEAD
 =======
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch_names=None, ch_pos=None,
              axis:int=-1, plottype='plot', offset:int=0, offset_ms:float=None, ylim=None, suptitle:str=None, show:bool=None):
     """    Make a multi-plot of the event ERPs (as stored in erp)
@@ -1412,7 +1419,10 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
         show (bool, optional): If not None, call plt.show() when plot is ready with block=show. Defaults to None.
     """
     import matplotlib.pyplot as plt
+<<<<<<< HEAD
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
     # ensure 4-d
     if erp_yetd.ndim<4:
@@ -1442,7 +1452,10 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
             times = [ t/fs for t in times ]
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
             if offset_ms is not None:
                 times = [ t + offset_ms / 1000 for t in times ]
 
@@ -1451,7 +1464,10 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
         if np.sum(iseeg)<len(ch_names)*.7:
             print("Warning: couldn't match channel names....")
             ch_pos, iseeg = None, None
+<<<<<<< HEAD
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
     if ch_names is None:
         ch_names = ["{}".format(i) for i in range(erp_yetd.shape[-1])]
@@ -1503,6 +1519,7 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
     if clim[0]==clim[1]: clim=[-1,1]
     if any(np.isnan(clim)) or any(np.isinf(clim)): clim=None
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
         axis = erp.ndim+axis
     clim = [np.min(erp.flat), np.max(erp.flat)]
@@ -1510,6 +1527,8 @@ def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch
     import matplotlib.pyplot as plt
 =======
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
     # print("erp_etd={}".format(erp_etd.shape))
     # print(" {}, {}, {} ".format(icoords, jcoords, kcoords))
@@ -2401,12 +2420,18 @@ def testCases():
 if __name__=="__main__":
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
     import matplotlib.pyplot as plt
 
     plot_erp(np.random.standard_normal(size=(1,1,20,4,8)),ch_names=['FPz','C3','Cz','C4','CP3','CPz','CP4','Pz'])
     plt.show(block=True)
+<<<<<<< HEAD
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
     topoplots(np.random.standard_normal((5,8)),ch_names=['FPz','C3','Cz','C4','CP3','CPz','CP4','Pz'])
 

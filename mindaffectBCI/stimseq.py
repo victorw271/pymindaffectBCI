@@ -26,10 +26,14 @@ savedir = os.path.join(pydir,'stimulus_sequence') if os.path.isdir(os.path.join(
 class StimSeq :
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     def __init__(self,st=None,ss=None,es=None):
 =======
     def __init__(self,ss=None,st=None,es=None):
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+    def __init__(self,ss=None,st=None,es=None):
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
         """class which holds a stimulus-sequence, i.e. an (nobjects, ntimepoints) sequence describing the state of all objects at each time point.
 
         Note: In real usage only the `stimSeq` property is used, all othe properties are currently unused.
@@ -104,10 +108,14 @@ class StimSeq :
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
     def plot(self,show=None,title=None, xlim=None, ylim=None):
 =======
     def plot(self,show=None,title=None, xlim=None, ylim=None, as_image:bool=False):
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+    def plot(self,show=None,title=None, xlim=None, ylim=None, as_image:bool=False):
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
         """plot the stimulus sequence as a multi-line plot
 
         Args:
@@ -1647,10 +1655,13 @@ def mkCodes():
 
 
 
+<<<<<<< HEAD
 
     ssvep_cont = mkFreqTag(isbinary=False)
     ssvep_cont.toFile('ssvep_cont.png')
     ssvep_cont.toFile('ssvep_cont.txt')
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
 # testcase code
 if __name__ == "__main__":

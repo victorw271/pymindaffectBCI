@@ -239,11 +239,15 @@ class Flicker(FSM):
             sendEvents (bool, optional): should we send stimulus events.  Defaults to True
             framesperbit (int, optional): number of video-frames, i.e. calls to next, per stimsequence bit.  Defaults to 1.
 <<<<<<< HEAD
+<<<<<<< HEAD
             permute (bool, optional): flag, should we permute the codebook to output mapping.  Defaults to False.
 <<<<<<< HEAD
 =======
             permute (bool|list-of-int, optional): If True then randomly permute the codebook to output mapping.  If list then use this given mapping such that: cb = cb[:,permute].  Defaults to False.
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+            permute (bool|list-of-int, optional): If True then randomly permute the codebook to output mapping.  If list then use this given mapping such that: cb = cb[:,permute].  Defaults to False.
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
             startframe (int, optional): starting frame number in the stimulus sequence.  If set to 'random' then choose a random starting point.  If set to 'lastframe' continue from the last frame for which 'sendEvents' was true. Defaults to 0.
         """
         self.stimSeq, self.numframes, self.tgtidx, self.sendEvents, self.permute = (
@@ -258,6 +262,7 @@ class Flicker(FSM):
             self.startframe = startframe
         self.nframe = 0
         self.framesperbit = framesperbit if framesperbit is not None else 1
+<<<<<<< HEAD
 <<<<<<< HEAD
 =======
         """    
@@ -276,6 +281,10 @@ class Flicker(FSM):
         if self.permute is not None and self.permute is not False:
             self.update_codebook_permutation(self.permute)
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+        if self.permute is not None and self.permute is not False:
+            self.update_codebook_permutation(self.permute)
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
         # ensure right length
         self.ss = None

@@ -23,11 +23,14 @@
 <<<<<<< HEAD
 
 <<<<<<< HEAD
+<<<<<<< HEAD
 from mindaffectBCI.decoder.temporal_basis import get_temporal_basis, apply_temporal_basis, invert_temporal_basis_mapping
 =======
 >>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
 =======
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 import numpy as np
 import scipy as sp
 import copy
@@ -173,6 +176,7 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
                  fs: float = None, outputscore: str = 'ip', priorweight: float = 0, startup_correction: int = 50,
                  prediction_offsets: list = None, centerY: bool = False, minDecisLen: int = 0, bwdAccumulate: bool = False,
 <<<<<<< HEAD
+<<<<<<< HEAD
                  nvirt_out: int = -20, nocontrol_condn: float = .5, verb: int = 0):
 =======
     def __init__(self, evtlabs=('re','fe'), tau=18, offset=0, priorweight=200, startup_correction=100, prediction_offsets=None, minDecisLen=0, bwdAccumulate=False, verb=0):
@@ -180,6 +184,9 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
 =======
                  nvirt_out: int = -20, nocontrol_condn: float = .5, verb: int = 0, score_type:str='audc'):
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+                 nvirt_out: int = -20, nocontrol_condn: float = .5, verb: int = 0, score_type:str='audc'):
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
         """Base class for general sequence to sequence models and inference
 
             N.B. this implementation assumes linear coefficients in W_ (nM,nfilt,d) and R_ (nM,nfilt,nE,tau)
@@ -323,6 +330,7 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
             Y (np.ndarray (tr,samp,nY)): the multi-trial stimulus sequences
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
             dedup0 ([type], optional): remove duplicates of the Yidx==0, i.e. 1st, assumed true, output of Y. Defaults to False.
 =======
             dedup0 ([type], optional): remove duplicates of the Yidx==0, i.e. 1st, assumed true, output of Y. Defaults to True.
@@ -330,6 +338,9 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
 =======
             dedup0 ([type], optional): remove duplicates of the Yidx==0, i.e. 1st, assumed true, output of Y. >0 remove the copy (used when calibrating), <0 remove objID==0 (used when predicting) Defaults to False.
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+            dedup0 ([type], optional): remove duplicates of the Yidx==0, i.e. 1st, assumed true, output of Y. >0 remove the copy (used when calibrating), <0 remove objID==0 (used when predicting) Defaults to False.
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
             prevY ([type], optional): previous stimulus sequence information. for partial incremental calls. Defaults to None.
             offsets ([ListInt], optional): list of offsets in Y to try when decoding, to override the class variable.  Defaults to None.
 
@@ -844,6 +855,7 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
             self, X, y, cv: int = 5, fs=None, fit_params: dict = dict(),
             verbose: bool = 0, return_estimator: bool = True, calibrate_softmax: bool = True, retrain_on_all: bool = True,
 <<<<<<< HEAD
+<<<<<<< HEAD
             score=None):
 =======
         Fy = self.predict(X, Y, dedup0=True) # (nM, nTrl, nSamp, e)
@@ -868,6 +880,9 @@ class BaseSequence2Sequence(BaseEstimator, ClassifierMixin):
 =======
             score_type=None):
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+            score_type=None):
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
         """Cross-validated fit the model for generalization performance estimation
 
         N.B. write our own as sklearn doesn't work for getting the estimator values for structured output.
@@ -3161,6 +3176,7 @@ def testcase(dataset='toy', loader_args=dict()):
 <<<<<<< HEAD
     cca = MultiCCA(tau=tau, rank=1, evtlabs=evtlabs)
 <<<<<<< HEAD
+<<<<<<< HEAD
     cv_res = cca.cv_fit(X_TSd, Y_TSy, ranks=(1, 2, 3, 5))
 =======
     cca = MultiCCA(tau=tau, rank=1, reg=None, evtlabs=evtlabs)
@@ -3169,6 +3185,9 @@ def testcase(dataset='toy', loader_args=dict()):
 =======
     cv_res = cca.cv_fit(X_TSd, Y_TSy, ranks=(1, 2, 3, 5), inner_cv_params=dict())
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+    cv_res = cca.cv_fit(X_TSd, Y_TSy, ranks=(1, 2, 3, 5), inner_cv_params=dict())
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
     Fy = cv_res['estimator']
     (_) = decodingCurveSupervised(Fy, priorsigma=(cca.sigma0_, cca.priorweight))
 

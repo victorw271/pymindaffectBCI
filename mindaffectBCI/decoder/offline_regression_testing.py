@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 from joblib import PrintTime
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 import numpy as np
 import matplotlib.pyplot as plt
 # force random seed for reproducibility
@@ -125,6 +128,10 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     loader, filenames, _ = get_dataset(dataset,**dataset_args)
 
     print("\n{} Files\n: {}".format(len(filenames),filenames))
+<<<<<<< HEAD
+=======
+
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
     # first make the base pipeline to run
     clsfr = make_preprocess_pipeline(pipeline)
@@ -243,6 +250,8 @@ if __name__=="__main__":
            StopErr  0.96  0.93  0.89  0.81  0.69  0.60  0.56  0.56   AUSC 77.0\n\
      StopThresh(P)  0.86  0.82  0.77  0.63  0.49  0.44  0.44  0.44   SSAE 23.9")
 
+
+
     print('------------------\n\n P L O S    O N E\n\n---------------------')
     dataset, dataset_args, loader_args, pipeline, cv = setup_plos_one()
     regression_test(dataset, dataset_args, loader_args=loader_args, pipeline=pipeline, cv=cv)
@@ -252,6 +261,7 @@ if __name__=="__main__":
          Perr(est)  0.57  0.39  0.31  0.26  0.21  0.19  0.17  0.16   PSAE 10.6\n\
            StopErr  0.94  0.94  0.78  0.53  0.44  0.42  0.41  0.41   AUSC 63.1\n\
      StopThresh(P)  0.79  0.79  0.62  0.44  0.38  0.38  0.39  0.39   SSAE 15.6')
+
 
     print('------------------\n\n L O W L A N D S\n\n---------------------')
     dataset, dataset_args,loader_args,pipeline,cv = setup_lowlands()

@@ -828,6 +828,10 @@ def send_prediction(ui: UtopiaDataInterface, Ptgt, used_idx=None, timestamp:int=
     ui.sendMessage(ptp)
     # distribution over all *non-zero* targets
     ui.sendMessage(PredictedTargetDist(timestamp, used_idx, Ptgt))
+<<<<<<< HEAD
+=======
+
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
 
 <<<<<<< HEAD

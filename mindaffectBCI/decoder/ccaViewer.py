@@ -28,10 +28,14 @@ import matplotlib.gridspec as gridspec
 
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 def run(ui: UtopiaDataInterface, maxruntime_ms: float=np.inf, timeout_ms:float = 500, tau_ms: float=500,
 =======
 def run(ui: UtopiaDataInterface=None, maxruntime_ms: float=np.inf, timeout_ms:float = 500, tau_ms: float=500,
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+def run(ui: UtopiaDataInterface=None, maxruntime_ms: float=np.inf, timeout_ms:float = 500, tau_ms: float=500,
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
               offset_ms=(-15, 0), evtlabs=None, ch_names=None, ch_pos=None, topo_colorbar:bool=False, nstimulus_events: int=600, 
               rank:int=3, reg=.02, center:bool=True, host:str='-', filterband=None, out_fs=100, noutputs:int=1, **kwargs):
     """on-line view of the CCA Forward-Backward model of the data

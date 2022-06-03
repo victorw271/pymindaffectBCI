@@ -7,6 +7,7 @@
 //   * Presentation : <https://github.com/mindaffect/pymindaffectBCI/blob/open_source/mindaffectBCI/examples/presentation/selectionMatrix.py> 
 {
 <<<<<<< HEAD
+<<<<<<< HEAD
     "acquisition":"brainflow",
     "acq_args":{
         "board_id":0,
@@ -20,6 +21,15 @@
         "board_id":0,
         "serial_port":"COM5"
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+    // Acquisition is responsible for getting the data from the bio-signals device, and then forwarding the 
+    // time-stamped data to the mindaffectBCI Hub.  
+    // This configuration is to use the brainflow generic device driver.
+    "acquisation":"brainflow",
+    "acq_args":{
+        "board_id":0,
+        "serial_port":"COM5"
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
     },
 
     // The decoder is responsible for analysising the EEG data and generating predicted brain states.
@@ -27,6 +37,7 @@
     // Modify this for different experiments or types of brain response.
     "decoder":"mindaffectBCI.decoder.decoder",
     "decoder_args":{
+<<<<<<< HEAD
 <<<<<<< HEAD
 <<<<<<< HEAD:mindaffectBCI/config/online_bci.json
         "stopband" : [[45,65],[3,25,"bandpass"]],
@@ -38,6 +49,11 @@
         "stopband" : [[45,65],[3,25,"bandpass"]],
         // out_fs : set the analysis sampling rate, input signal is re-sampled to this rate after the filters
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+        // stopband: set the frequency filter as a list of bandstop (45-65Hz) or bandpass (5-25Hz) filters
+        "stopband" : [[45,65],[3,25,"bandpass"]],
+        // out_fs : set the analysis sampling rate, input signal is re-sampled to this rate after the filters
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
         "out_fs" : 100,
         // evtlabs : the types of stimulus event we model a response for.  
         // Here: re=rising-edge, i.e. increase in stimulus brightness, fe=falling-edge, i.e. decrease in stimulus intensity
@@ -65,16 +81,22 @@
         // symbols:str -- file or list-of-lists-of-str for the layout of the predictiongrid
         "symbols":"symbols.txt",
 <<<<<<< HEAD
+<<<<<<< HEAD
         "calibration_symbols":[["0","1","2"],["3","4","5"],["6","7","8"]],
         "stimfile":"mgold_65_6532_psk_60hz.png",
 =======
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
         // calibration_symbols -- file or list-of-lists-of-str for the layout of the matrix used during calibration
         //                       here we use a smaller 3x3 grid for this
         "calibration_symbols":[["0","1","2"],["3","4","5"],["6","7","8"]],
         // stimfile:str -- file which contains the stimulus sequence used to display the stimuli
         "stimfile":"mgold_65_6532_psk_60hz.txt",
         // framesperbit:int -- number of video-frames for a single entry in the stim-file.  Higher means the stimuli are solower
+<<<<<<< HEAD
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
         "framesperbit":1,
         // fullscreen:bool -- flag if we run the presentation full-screen
         "fullscreen":true,

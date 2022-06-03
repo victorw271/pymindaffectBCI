@@ -207,6 +207,7 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, fs_out:float=
     # estimate the best trial-length to use
     if min_trlen_ms is None and len(trl_dur)>0:
         min_trlen_ms = np.sort(trl_dur)[int(len(trl_dur)*max_trlen_percentile)]
+<<<<<<< HEAD
     # strip any trial too much shorter than trlen_ms (50%)
     keep = np.flatnonzero(trl_dur>min_trlen_ms*.2)
     if verb>1 : print('Got {} trials, keeping {}'.format(len(trl_stim_idx)-1,len(keep)))
@@ -242,6 +243,11 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, fs_out:float=
     keep = np.flatnonzero(trl_dur>trlen_ms*.2)
     print('Got {} trials, keeping {}'.format(len(trl_stim_idx)-1,len(keep)))
 >>>>>>> 53e3633bc55dd13512738c132868bdd9a2fa713a
+=======
+    # strip any trial too much shorter than trlen_ms (50%)
+    keep = np.flatnonzero(trl_dur>min_trlen_ms*.2)
+    if verb>1 : print('Got {} trials, keeping {}'.format(len(trl_stim_idx)-1,len(keep)))
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
     # re-compute the trlen_ms for the good trials
     trl_stim_idx = trl_stim_idx[keep]
     trl_dur = trl_dur[keep]
@@ -259,6 +265,7 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, fs_out:float=
     if verb>1 : print('{} trl_dur (samp): {}'.format(len(trl_samp_idx),np.diff(trl_samp_idx)))
     if verb>1 : print('{} trl_dur (ms) : {}'.format(len(trl_ts),np.diff(trl_ts)))
 <<<<<<< HEAD
+<<<<<<< HEAD
 =======
     trl_ts       = stim_ts[trl_stim_idx]   
 
@@ -268,6 +275,9 @@ def load_mindaffectBCI(source, datadir:str=None, sessdir:str=None, fs_out:float=
 =======
     if verb>1 : print('trlen_ms : {}'.format(trlen_ms))
 >>>>>>> dab5408b09e2f2b0bf51722cb923e199f8458931
+=======
+    if verb>1 : print('trlen_ms : {}'.format(trlen_ms))
+>>>>>>> ed6a7426202fb59d2c518e9aef6a1957ef06f690
 
     # compute the trial start/end relative to the trial-start
     trlen_samp  = int(trlen_ms *  fs / 1000)
