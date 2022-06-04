@@ -1,5 +1,7 @@
 name: MLOps-offline_regression_testing
-on: [push]
+on:
+  issues:
+    types: [created]
 jobs:
   run:
     runs-on: [ubuntu-latest]
