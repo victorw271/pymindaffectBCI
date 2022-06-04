@@ -1,5 +1,5 @@
 #  Copyright (c) 2019 MindAffect B.V. 
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -14,11 +14,9 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with pymindaffectBCI.  If not, see <http://www.gnu.org/licenses/>
-
-from mindaffectBCI.decoder.normalizeOutputScores import mktestFy
 import numpy as np
 
-def zscore2Ptgt_softmax(f, softmaxscale:float=2, prior:np.ndarray=None, validTgt=None, marginalizemodels:bool=True, marginalizedecis:bool=False, peroutputmodel:bool=True):
+def zscore2Ptgt_softmax(f, softmaxscale:float=2, prior:np.ndarray=None, validTgt=None, marginalizemodels:bool=True, marginalizedecis:bool=False, peroutputmodel:bool=False):
     '''
     convert normalized output scores into target probabilities
 
@@ -155,14 +153,21 @@ def marginalize_scores(f, axis, prior=None, keepdims=False):
 
     return f
 
-def calibrate_softmaxscale(f, validTgt=None, scales=(.01,.02,.05,.1,.2,.3,.4,.5,1,1.5,2,2.5,3,3.5,4,5,7,10,15,20,30), MINP=.01, marginalizemodels=True, marginalizedecis=False, eta=.05, error_weight=2):
+def calibrate_softmaxscale(f, validTgt=None, 
+                           scales=(.01,.02,.05,.1,.2,.3,.4,.5,1,1.5,2,2.5,3,3.5,4,5,7,10,15,20,30,50,100), 
+                           MINP=1e-5, marginalizemodels=True, marginalizedecis=False, 
+                           nocontrol_condn=.1, verb=0):
     '''
-    attempt to calibrate the scale for a softmax decoder to return calibrated probabilities
+    attempt to calibrate the scale for a softmax decoder to return calibrated probabilities, optionally simulate a no-control condition for controlling the false-positive detections
 
     Args:
-     f ((nM,)nTrl,nDecis,nY): normalized accumulated scores]
-     validTgt(bool (nM,)nTrl,nY): which targets are valid in which trials
-     scales (list:int): set of possible soft-max scales to try
+     f ((nM,)nTrl,nDecis,nY): normalized accumulated scores
+     validTgt(bool (nM,)nTrl,nY): which targets are valid in which trials.
+     scales (list:int): set of possible soft-max scales to try.
+     marginalizemodels (bool): marginalize over models when computing the output pvals? Defaults to True.
+     marginalizedecis (bool): marginalize over decision points when computing the output pvals? Defaults to False.
+     nocontrol_condn (float): if >0, then simulate a set of no-control condition trials by only including
+            the non-target outputs, and include the loss on this dataset weighted by `nocontrol_condn` in the loss
      MINP (float): minimium P-value.  We clip the true-target p-val to this level as a way
             of forcing the fit to concentrate on getting the p-val right when high, rather than
             over penalizing when it's wrong
@@ -170,19 +175,32 @@ def calibrate_softmaxscale(f, validTgt=None, scales=(.01,.02,.05,.1,.2,.3,.4,.5,
     Returns:
      softmaxscale (float): slope for softmax to return calibrated probabilities
     '''
-    if validTgt is None: # get which outputs are used in which trials..
-        validTgt = np.any(f != 0, axis=(-4,-2) if f.ndim>3 else -2) # (nTrl,nY)
-    elif validTgt.ndim == 1:
-        validTgt = validTgt[np.newaxis, :]
-
     # remove trials with no-true-label info
     axis = (-3,-1) if f.ndim>3 else (-1)
     keep = np.any(f[..., 0], axis) # [ nTrl ]
     if not np.all(keep):
         f = f[..., keep, :, :]
-        if validTgt.shape[0] > 1 :
-            validTgt = validTgt[..., keep, :]
- 
+    # strip empty outputs (over all trials)
+    axis = (-4,-3,-2) if f.ndim>3 else (-3,-2)
+    keep = np.any(f!=0,axis=axis) # nY
+    if not np.all(keep):
+        f = f[..., keep]
+    if f.size==0: # guard against no data to calibrate on
+        return None
+
+    validTgt = np.any(f != 0, axis=(-4,-2) if f.ndim>3 else -2) # (nTrl,nY)
+
+    # compute label confidence weighting, by estimating the performance at each time-point
+    ycorr = np.argmax(f,axis=-1)[...,np.newaxis]==0
+    axis = (-4,-3) if f.ndim>3 else (-3,)
+    pcorr = np.sum(ycorr,axis=axis,keepdims=True)/np.prod([ycorr.shape[i] for i in axis])
+
+    f_nc = None
+    if nocontrol_condn and f.shape[-1]>5:
+        f_nc = f[..., 1:]
+        vtgt_nc = np.any(f_nc != 0, axis=(-4,-2) if f.ndim>3 else -2) # (nTrl,nY)
+        if verb>0: print('No-control amplitude {} on {} nc-outputs'.format(nocontrol_condn,f_nc.shape[-1]))
+
     # include the nout correction on a per-trial basis
     noutcorr = softmax_nout_corr(np.sum(validTgt,1)) # (nTrl,)
 
@@ -191,46 +209,32 @@ def calibrate_softmaxscale(f, validTgt=None, scales=(.01,.02,.05,.1,.2,.3,.4,.5,
     for i,s in enumerate(scales):
         # apply the soft-max with this scaling
         Ptgt = zscore2Ptgt_softmax(f,softmaxscale=s,validTgt=validTgt,marginalizemodels=marginalizemodels,marginalizedecis=marginalizedecis)
-        # Compute the loss = cross-entropy.  
-        # As Y==0 is *always* the true-class, this becomes simply sum log this class 
-        # Compute the loss = cross-entropy, with soft targets
-        # identify trials where prediction is incorrect
-        Yerr = Ptgt[...,0:1] < np.max(Ptgt[...,1:],-1,keepdims=True)
-        wght = np.ones(Yerr.shape,dtype=Ptgt.dtype)
-        wght[Yerr] = error_weight # relative weighting for these errors
-        if False:
-            # As Y==0 is *always* the true-class, this becomes simply sum log this class 
-            Ed[i] = (1-eta)*np.sum(-wght*np.log(np.maximum(Ptgt[...,0:1],MINP))) + (eta/Ptgt.shape[-1])*np.sum(-wght*np.log(np.maximum(Ptgt[...,1:],MINP)))
-        else:
-            Ed[i] = -np.sum(np.log(np.maximum(Ptgt[...,0:1],1e-5)))
 
-        #print("{}) scale={} Ed={}".format(i,s,Ed[i]))
+        # Compute the loss = cross-entropy.  
+        # As Y==0 is *always* the true-class, this becomes simply sum log this class
+        Ptrue = Ptgt[...,0:1]
+        Edi = -np.sum( pcorr*np.log(np.maximum(Ptrue,MINP)) + (1-pcorr)*np.log(np.maximum(1-np.maximum(Ptrue,.8),MINP)) )
+
+        if nocontrol_condn and not f_nc is None:
+            # inlude a non-control class loss
+            Ptgt_nc = zscore2Ptgt_softmax(f_nc,softmaxscale=s,validTgt=vtgt_nc,marginalizemodels=marginalizemodels,marginalizedecis=marginalizedecis)
+            Edi_nc = np.sum( -np.log(np.maximum(1-np.maximum(np.max(Ptgt_nc,axis=-1),.9),MINP)) ) #/ (f.shape[-1]-1)
+            Edii = Edi + Edi_nc * nocontrol_condn
+            if verb > 0: print("{:3d}) scale={:5.1f} Ed={:5.1f} = {:5.1f} + {:5.1f}".format(i,s,Edii, Edi, Edi_nc * nocontrol_condn))
+            Edi = Edii
+        else:
+            if verb > 0: print("{:3d}) scale={:5.1f} Ed={:5.1f}".format(i,s,Edi))
+
+        Ed[i] = Edi
     # use the max-entropy scale
     mini = np.argmin(Ed)
     softmaxscale = scales[mini]
-    print("softmaxscale={}".format(softmaxscale))
+    if verb>0: print("softmaxscale={}".format(softmaxscale))
     return softmaxscale
-
-def mkTestFy(nY,nM,nEp,nTrl,sigstr,startup_lag):
-    np.random.seed(0)
-    noise = np.random.standard_normal((nM,nTrl,nEp,nY))
-    noise = noise - np.mean(noise.ravel())
-    noise = noise / np.std(noise.ravel())
-
-    sigamp=sigstr*np.ones(noise.shape[-2]) # [ nEp ]
-    # no signal ast the start of the trial
-    startuplag_samp=int(nEp*startup_lag)
-    sigamp[:startuplag_samp]=0
-    Fy = np.copy(noise)
-    # add the signal
-    Fy[0, :, :, 0] = Fy[0, :, :, 0] + sigamp
-    #print("Fy={}".format(Fy))
-    return Fy, noise, sigamp
-
 
 def visPtgt(Fy, normSum, centFy, detrendFy, bwdAccumulate,
             marginalizemodels, marginalizedecis, 
-            nEpochCorrection, priorweight, minDecisLen=-1):
+            nEpochCorrection, priorweight, minDecisLen=-1, nocontrol_condn=True, n_virt_outputs=None):
     import numpy as np
     #print("{}".format(locals()))
     
@@ -244,7 +248,7 @@ def visPtgt(Fy, normSum, centFy, detrendFy, bwdAccumulate,
     ssFy,scale_sFy,N,_,_=normalizeOutputScores(Fy.copy(),minDecisLen=-1, nEpochCorrection=nEpochCorrection, 
                                 normSum=normSum, detrendFy=detrendFy, centFy=centFy, bwdAccumulate=False,
                                 marginalizemodels=marginalizemodels, priorsigma=(sigma0,priorweight))
-    softmaxscale = calibrate_softmaxscale(ssFy,marginalizemodels=marginalizemodels)
+    softmaxscale = calibrate_softmaxscale(ssFy,marginalizemodels=marginalizemodels, nocontrol_condn=nocontrol_condn)
 
     ssFy,scale_sFy,N,_,_=normalizeOutputScores(Fy.copy(),minDecisLen=-1, nEpochCorrection=nEpochCorrection, 
                                 normSum=normSum, detrendFy=detrendFy, centFy=centFy, bwdAccumulate=False,
@@ -300,6 +304,8 @@ def visPtgt(Fy, normSum, centFy, detrendFy, bwdAccumulate,
         plt.ylim((np.min(smax.ravel()),np.max(smax.ravel())))
         if mi==0: plt.ylabel('softmax')
         plt.grid()
+
+
         if Ptgt.ndim>3 :
             if mi==0:
                 a=plt.subplot(4,nM,3*nM+mi+1, sharex=xax)
@@ -334,19 +340,10 @@ def visPtgt(Fy, normSum, centFy, detrendFy, bwdAccumulate,
     plot_decoding_curve(*dc)
     plt.show()
 
-def testcase(nY=10, nM=4, nEp=340, nTrl=500, sigstr=.4, normSum=True, centFy=True, detrendFy=True, marginalizemodels=True, marginalizedecis=False, bwdAccumulate=False, nEpochCorrection=20, priorweight=1e2, startup_lag=.1):
-
-    # mk the test dataset
-    Fy, noise, sigamp = mkTestFy(nY,nM,nEp,nTrl,sigstr,startup_lag)
-
-    # visualize it
-    visPtgt(Fy,normSum,centFy,detrendFy,bwdAccumulate,marginalizemodels,marginalizedecis,nEpochCorrection,priorweight)
-
-
-
 if __name__=="__main__":
     if True:
-        Fy, noise, sigamp = mkTestFy(nY=10,nM=1,nEp=640,nTrl=200,sigstr=.15,startup_lag=.3)
+        from mindaffectBCI.decoder.normalizeOutputScores import mktestFy
+        Fy, noise, sigamp = mkTestFy(nY=10, nM=1, nEp=800, nTrl=100, sigstr=.25, startup_lag=.20)
     else:
         import pickle
         stopping=pickle.load(open('stopping.pk','rb'))
@@ -356,5 +353,10 @@ if __name__=="__main__":
         Fy=Fy[...,keep,:,:]
         Y=Y[...,keep,:,:]
 
-    visPtgt(Fy.copy(),normSum=False, centFy=True, detrendFy=False, bwdAccumulate=False, minDecisLen=100,
-            marginalizemodels=True,marginalizedecis=True,nEpochCorrection=50,priorweight=200)
+    visPtgt(Fy.copy(),normSum=True, centFy=True, detrendFy=False, bwdAccumulate=False, minDecisLen=100,
+            marginalizemodels=True,marginalizedecis=True,nEpochCorrection=30,priorweight=0,
+            nocontrol_condn=.1, n_virt_outputs=0)
+
+    visPtgt(Fy.copy(),normSum=True, centFy=True, detrendFy=False, bwdAccumulate=False, minDecisLen=100,
+            marginalizemodels=True,marginalizedecis=True,nEpochCorrection=30,priorweight=0,
+            nocontrol_condn=False, n_virt_outputs=0)

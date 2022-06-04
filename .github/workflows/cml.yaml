@@ -12,15 +12,13 @@ jobs:
         run: |
           # Your ML workflow goes here
           pip install -r requirements.txt
+          pip install --upgrade pip
+          pip install -e .
           
-          python FH_Pipeline2.py
+          python mindaffectBCI/decoder/offline_regression_testing.py
+          python csv2text.py
           
-          echo "## OUTPUT FROM CML.YAML" > report.md
-          echo "\n## Model Metrics" > report.md
+          echo "## OFFLINE REGRESSION TESTING" > report.md
           cat metrics.txt >> report.md
-          
-          echo "\n## Model Performance" >> report.md
-          echo "Model performance metrics are on the plot below." >> report.md
-          cml-publish mindaffectBCI_decoding_curve.png --md >> report.md
           
           cml-send-comment report.md

@@ -1,5 +1,5 @@
 #  Copyright (c) 2019 MindAffect B.V. 
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -115,7 +115,7 @@ class lower_bound_tracker():
         a = a0
         b = b0
         # TODO[]: convergence criteria, to stop early
-        for i in range(3):
+        for _ in range(3):
             y_est = x[:,0]*a + b
             err = y - y_est # server > true, clip positive errors
             mu_err = np.mean(err)

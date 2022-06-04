@@ -14,9 +14,8 @@ __pycache__
 *dist*
 *.ipynb_checkpoints*
 *.png
-*.pk
 *.jpg
-*.jpeg
+*.pk
 description.xml
 calibration_data*
 *.egg-info

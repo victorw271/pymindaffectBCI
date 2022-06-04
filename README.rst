@@ -1,9 +1,6 @@
-mindaffectBCI
-=============
+mindaffectBCI: test actions
+============= 
 This repository contains the python SDK code for the Brain Computer Interface (BCI) developed by the company `Mindaffect <https://mindaffect.nl>`_.
-
-When installed, with the right hardware you can do things like shown `here <https://youtu.be/MVuQzaqDkKI>`_asfd
-test
 
 Online Documentation and Tutorials
 ----------------------------------
@@ -17,28 +14,17 @@ To install from **source** (currently the recommended method):
 
        git clone https://github.com/mindaffect/pymindaffectBCI
 
-  2. Install the necessary bits to your local python path:
+  #. Install the necessary bits to your local python path:
 
     1. change to the directory where you cloned the repository.
 
     #. Add this module to the python path, and install dependencies::
    
          pip install -e .
-  
-  3. Install a JAVA JVM, such as `this one <https://adoptopenjdk.net/index.html?variant=openjdk15&jvm>`_
 
 To install as a python library::
 
     pip install --upgrade mindaffectBCI
-
-Try the off-line analysis on-line on binder.
-
-.. image:: https://mybinder.org/badge_logo.svg
- :target: https://mybinder.org/v2/gh/mindaffect/pymindaffectBCI/pip_test
-
-Try off-line multiple datasets analysis on `kaggle <https://www.kaggle.com/mindaffect/mindaffectbci>`_ 
-
-
 
 Installation Test
 -----------------
@@ -51,11 +37,11 @@ Essentially, this run the SDK test code which simulates a *fake* EEG source and 
 
 If all is successfully installed then you should see a window like this open up.
 
-<img src='docs/source/images/mainmenu.png' width=300>
+<img src='docs/images/mainmenu.png' width=300>
 
 If you now press 2 you should see a flickering grid of "buttons" like below.  You should see a random one briefly flash green (it's the target) then rapidly flicker and eventually turn blue (to indicate it's selected.)
 
-<img src='docs/source/images/selectionmatrix.png' width=300>
+<img src='docs/images/selectionMatrix.png' width=300>
 
 If all this works then you have successfully installed the mindaffectBCI python software. You should now ensure your hardware (display, amplifier) is correctly configured before jumping into BCI control.
 
