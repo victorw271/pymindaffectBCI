@@ -20,7 +20,7 @@ import numpy as np
 from mindaffectBCI.decoder.UtopiaDataInterface import UtopiaDataInterface, stim2eventfilt, butterfilt_and_downsample
 
 
-def erpViewer(ui: UtopiaDataInterface, timeout_ms: float=np.inf, tau_ms: float=500,
+def run(ui: UtopiaDataInterface, maxruntime_ms: float=np.inf, timeout_ms: float=np.inf, tau_ms: float=500,
               offset_ms=(-15, 0), evtlabs=None, ch_names=None, nstimulus_events: int=600, rank=3, center=True):
     ''' simple sig-viewer using the ring-buffer for testing '''
     import matplotlib.pyplot as plt
@@ -130,19 +130,23 @@ def erpViewer(ui: UtopiaDataInterface, timeout_ms: float=np.inf, tau_ms: float=5
     # start the render loop
     t0 = ui.getTimeStamp()
     pending = []  # list of stimulus events for which still waiting for data to complete
-    while ui.getTimeStamp() < t0+timeout_ms:
+    dirty = False # flag if do full canvas redraw
+    while ui.getTimeStamp() < t0+maxruntime_ms:
 
         # exit if figure is closed..
         if not plt.fignum_exists(1):
             quit()
 
         # re-draw the display
-        fig.canvas.draw()
         fig.canvas.flush_events()
+        if dirty : 
+            fig.canvas.draw()
+            dirty=False
+
         #plt.pause(.001)
 
         # Update the records
-        nmsgs, ndata, nstim = ui.update(timeout_ms=100)
+        nmsgs, ndata, nstim = ui.update(timeout_ms=timeout_ms)
 
         # skip if no stimulus events to process
         if nstim == 0:
@@ -193,6 +197,7 @@ def erpViewer(ui: UtopiaDataInterface, timeout_ms: float=np.inf, tau_ms: float=5
         pending = new_pending
 
         # Update the plots for each event type
+        dirty=True
         for ei, lab in enumerate(evtlabs):
 
             # extract this events irfs
@@ -248,29 +253,51 @@ def erpViewer(ui: UtopiaDataInterface, timeout_ms: float=np.inf, tau_ms: float=5
                     temporal_ax[ei].set_title("{} ({})".format(lab, data.shape[0]))
                     temporal_ax[ei].set_ylim( (np.min(R.ravel())*2, np.max(R.ravel()) * 2) )
 
-if __name__=='__main__':
+def parse_args():
     import argparse
+    import json
     parser = argparse.ArgumentParser()
-    parser.add_argument('--host', type=str, help='address (IP) of the utopia-hub', default=None)
+    parser.add_argument('--host',type=str, help='address (IP) of the utopia-hub', default=None)
     parser.add_argument('--evtlabs', type=str, help='comma separated list of stimulus even types to use', default='re,fe')
+    parser.add_argument('--out_fs',type=int, help='output sample rate', default=100)
+    parser.add_argument('--stopband',type=json.loads, help='set of notch filters to apply to the data before analysis', default=((45,65),(5.5,25,'bandpass')))
+    parser.add_argument('--tau_ms',type=float, help='output sample rate', default=450)
+    parser.add_argument('--offset_ms',type=float, help='offset from time 0 for analysis', default=0)
     parser.add_argument('--rank', type=str, help='rank of decomposition to use', default=3)
     parser.add_argument('--ch_names', type=str, help='list of channel names, or capfile', default=None)
+    parser.add_argument('--savefile', type=str, help='run decoder using this file as the proxy data source', default=None)
+    parser.add_argument('--savefile_fs', type=float, help='effective sample rate for the save file', default=None)
+    parser.add_argument('--savefile_speedup', type=float, help='play back the save file with this speedup factor', default=None)
+    parser.add_argument('--timeout_ms', type=float, help="timeout for wating for new data from hub, equals min-redraw time.",default=500)
+   
     args = parser.parse_args()
-    hostname = args.host
-    evtlabs = args.evtlabs.split(',')
-    rank = args.rank
-    print('evtlabs={}'.format(evtlabs))
-    ch_names = args.ch_names.split(',') if args.ch_names is not None else None
+    if args.evtlabs: 
+        args.evtlabs = [ e.strip() for e in args.evtypes.split(',') ]
+    if args.ch_names:
+        args.ch_names = [ c.strip() for c in args.ch_names.split(',') ]
+        
+    return args
 
-    data_preprocessor = None
-    #data_preprocessor = butterfilt_and_downsample(order=6, stopband='butter_stopband((0, 5), (25, -1))_fs200.pk', fs_out=60)
-    data_preprocessor = butterfilt_and_downsample(order=4, stopband=((0, 4), (25, -1)), fs_out=80)
-    ui=UtopiaDataInterface(data_preprocessor=data_preprocessor, send_signalquality=False)
-    ui.connect(hostname)
+                    
+if __name__=='__main__':
+    args = parse_args()
+
+    if args.savefile is not None:
+        from mindaffectBCI.decoder.FileProxyHub import FileProxyHub
+        U = FileProxyHub(args.savefile,use_server_ts=True,speedup=args.savefile_speedup)
+        ppfn = butterfilt_and_downsample(order=6, stopband=args.stopband, fs_out=args.out_fs, ftype='butter')
+        ui = UtopiaDataInterface(data_preprocessor=ppfn,
+                                 send_signalquality=False,
+                                 timeout_ms=100, mintime_ms=0, U=U, fs=args.savefile_fs, clientid='viewer')
+    else:
+        data_preprocessor = butterfilt_and_downsample(order=6, stopband=args.stopband, fs_out=args.out_fs)
+        ui=UtopiaDataInterface(data_preprocessor=data_preprocessor, send_signalquality=False, clientid='viewer')
+        ui.connect(args.host)
 
     try:
         matplotlib.use('Qt4Cairo')
     except:
         pass
 
-    erpViewer(ui, evtlabs=evtlabs, ch_names=ch_names, rank=rank)
+    run(ui, **vars(args))
+    

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 #
 #  Copyright (c) 2019 MindAffect B.V. 
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -165,7 +165,7 @@ class RawMessage(UtopiaMessage):
         return (msgs, nconsumed)
     
     
-class Heartbeat(UtopiaMessage):    
+class Heartbeat(UtopiaMessage):
     """the HEARTBEAT utopia message class
     """    
 
@@ -356,8 +356,9 @@ class PredictedTargetDist(UtopiaMessage):
         """        
         super().__init__(PredictedTargetDist.msgID, PredictedTargetDist.msgName)
         self.timestamp=timestamp
-        self.objIDs=objIDs
         self.pTgt=pTgt
+        self.objIDs=objIDs if objIDs is not None else [range(len(pTgt))]
+
 
     def serialize(self):
         """Returns the contents of this event as a byte-stream, ready to send over the network, 
@@ -1186,6 +1187,10 @@ class UtopiaClient:
         if self.isConnected:
             hp=self.sock.getpeername()
             return ":".join(str(i) for i in hp)
+        return None
+    def gethost(self):
+        if self.isConnected:
+            return self.sock.getpeername()[0]
         return None
         
     def disconnect(self):

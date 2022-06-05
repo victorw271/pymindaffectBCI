@@ -5,6 +5,8 @@ All of our tutorials are interactive Jupyter Notebooks. Clone our `repository <h
 	jupyter notebook DIY_brain_computer_interfacing.ipynb
 
 
+You can also find more example notebooks focused on off-line analysis in our repository under the `examples\analysis <https://github.com/mindaffect/pymindaffectBCI/tree/open_source/mindaffectBCI/examples/analysis>`
+
 .. toctree::
    :maxdepth: 1
    
@@ -14,8 +16,9 @@ All of our tutorials are interactive Jupyter Notebooks. Clone our `repository <h
    simple_integration_tutorial
    build_your_own_optical_sensor
    stimulus_time-lock_test_tutorial
-   offline_analysis
-   multiple_datasets_analysis
+   offline_analysis_tutorial
+   multilple_datasets_analyse_tutorial
+   mne_mabci_ERP_example
    adding_brain_controls_to_your_unity_game
    controlling_a_phillips_hue_with_your_brain
    Rpi_GPIO

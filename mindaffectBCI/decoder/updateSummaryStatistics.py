@@ -1,5 +1,5 @@
 # Copyright (c) 2019 MindAffect B.V. 
-#  Author: Jason Farquhar <jason@mindaffect.nl>
+#  Author: Jason Farquhar <jadref@gmail.com>
 # This file is part of pymindaffectBCI <https://github.com/mindaffect/pymindaffectBCI>.
 #
 # pymindaffectBCI is free software: you can redistribute it and/or modify
@@ -20,7 +20,7 @@ from mindaffectBCI.decoder.utils import window_axis, idOutliers, zero_outliers
 #@function
 def updateSummaryStatistics(X, Y, stimTimes=None, 
                             Cxx=None, Cxy=None, Cyy=None, 
-                            badEpThresh=4, halflife_samp=1, cxxp=True, cyyp=True, tau=None,
+                            badEpThresh=4, badWinThresh=3,  halflife_samp=1, cxxp=True, cyyp=True, tau=None,
                             offset=0, center=True, unitnorm=True, zeropadded:bool=True, perY=True):
     '''
     Compute updated summary statistics (Cxx_dd, Cxy_yetd, Cyy_yetet) for new data in X with event-info Y
@@ -30,9 +30,7 @@ def updateSummaryStatistics(X, Y, stimTimes=None,
                d=#electrodes tau=#response-samples  nEpoch=#stimulus events to process
          OR
           (nTrl, nSamp, d)
-      Y_TSye = (nTrl, nEp, nY, nE): Indicator for which events occured for which outputs
-         OR
-           (nTrl, nSamp, nY, nE)
+      Y_TSye = (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
                nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
       stimTimes_samp = (nTrl, nEp) sample times for start each epoch.  Used to detect
                overlapping responses
@@ -57,28 +55,42 @@ def updateSummaryStatistics(X, Y, stimTimes=None,
       stimTimes = [nEpoch] sample numbers of the stimulus events
                 # OR None if X, Y are samples
       [Cxx, Cxy, Cyy] = updateSummaryStatistics(X, Y, 3*np.arange(X.shape[0]));
-      [J, w, r]=multipleCCA(Cxx, Cxy, Cyy)
+      [J, w, r, a, I]=multipleCCA(Cxx, Cxy, Cyy)
     '''
     if X is None:
         return Cxx, Cxy, Cyy
     if tau is None:
         if Cxy is not None:
             tau = Cxy.shape[-2]
-        elif X.shape[-2] < 100: # assume X is already sliced so we can infer the tau..
+        elif X.ndim > 3: # assume X is already sliced so we can infer the tau..
             print("Warning: guessing tau from shape of X")
             tau = X.shape[-2]
         else:
             raise ValueError("tau not set and Cxy is None!")
+
+    # add missing trial dim to X if not there
+    if X.ndim==2: # put trial dim back in
+        Y = Y.reshape( (1,)*(3-X.ndim) + Y.shape) 
+        X = X.reshape( (1,)*(3-X.ndim) + X.shape)
+
     tau = int(tau) # ensure tau is integer
+    if tau > X.shape[1]:
+        print("Warning!!!!! tau is bigger than number samples in X... truncated")
+        tau = X.shape[1]
     wght = 1
 
-    X, Y = zero_outliers(X, Y, badEpThresh)
+    X, Y = zero_outliers(X, Y, badEpThresh, badWinThresh=badWinThresh, winsz=tau, verb=0)
     
     # update the cross covariance XY
     Cxy = updateCxy(Cxy, X, Y, stimTimes, tau, wght, offset=offset, center=center, unitnorm=unitnorm)
     # Update Cxx
-    if (cxxp):
-        Cxx = updateCxx(Cxx, X, stimTimes, None, wght, offset=offset, center=center, unitnorm=unitnorm)
+    if cxxp:
+        if cxxp is True:
+            Cxx = updateCxx(Cxx, X, stimTimes, tau, wght, offset=offset, center=center, unitnorm=unitnorm)
+        elif cxxp == 'noise': # estimate using only the non-stimulus data
+            Cxx = updateCxx_n(Cxx, X, Y, stimTimes, tau, wght, offset=offset, center=center, unitnorm=unitnorm)
+        elif cxxp == 'signal': # estimate using only the non-stimulus data
+            Cxx = updateCxx_s(Cxx, X, Y, stimTimes, tau, wght, offset=offset, center=center, unitnorm=unitnorm)
 
     # ensure Cyy has the right size if not entry-per-model
     if (cyyp):
@@ -87,12 +99,89 @@ def updateSummaryStatistics(X, Y, stimTimes=None,
         
     return Cxx, Cxy, Cyy
 
+
+def match_labels(Y_TSye, label_matcher=None):
+    match_ax = (-1,-2) if Y_TSye.ndim==4 else -1 # axis to match over
+    if label_matcher is None or label_matcher == 'non_zero':
+        sig_TS = np.any(Y_TSye!=0,axis=match_ax) # samples at which stime-event happens
+    elif callable(label_matcher):
+        sig_TS = label_matcher(Y_TSye,axis=match_ax)
+    elif hasattr(label_matcher,'__iter__'): # list matching values
+        sig_TS = False
+        for v in label_matcher:
+            sig_TS = np.logical_or(sig_TS, np.any(Y_TSye==v,axis=match_ax))
+    return sig_TS
+
+
+def get_signal_indicator(Y_TSye, tau:int=10, offset:int=0, label_matcher=None):
+    """identify the samples in the dataset which should contain a stimulus response
+
+    Args:
+        Y_TSye ([type]): [description]
+    Returns:
+        sig_TS : bool indicator of which samples contain signal
+    """
+    assert offset==0, "Non-zero offset not supported yet"
+
+    # get time points which contain a signal (of the interesting type)
+    sig_TS = match_labels(Y_TSye, label_matcher)
+
+    # Any sample up-to tau samples after stimulus event is also assumed to contain signal
+    sig_TS = np.concatenate((np.zeros((sig_TS.shape[0],tau-1),dtype=sig_TS.dtype),sig_TS),axis=-1) # pad so any stim tau-before TS is true
+    sig_TSt = window_axis(sig_TS, winsz=tau, axis=-1, step=1)
+    sig_TS = np.any(sig_TSt,axis=-1) # any stim in tau after this time point
+    return sig_TS
+
+def updateCxx_n(Cxx, X_TSd, Y_TSye=None, stimTimes=None, tau:int=None, wght:float=1, offset:int=0, center:bool=False, unitnorm:bool=True):
+    '''
+    Args:
+        Cxx_dd (ndarray (d,d)): current data covariance
+        X_TSd (nTrl, nSamp, d): raw response at sample rate
+        Y_TSye = (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
+                nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
+        stimTimes_samp (ndarray (nTrl, nEp)): sample times for start each epoch.  Used to detect
+        wght (float): weight to accumulate this Cxx with the previous data, s.t. Cxx = Cxx_old*wght + Cxx_new.  Defaults to 1.
+        center (bool): flag if center the data before computing covariance? Defaults to True.
+    Returns:
+        Cxx_dd (ndarray (d,d)): current noise data covariance
+    '''
+    # use Y non-zero to estimate the data which does not contain stimulus responses
+    sig_TS = get_signal_indicator(Y_TSye,tau,offset)
+    # only use the *non*-signal data to compute the spatial whitener
+    noise_TS = np.logical_not(sig_TS)
+    X = X_TSd[noise_TS,...] if np.sum(noise_TS) > noise_TS.size * .05 else X_TSd
+    Cxx = updateCxx(Cxx,X,stimTimes,tau,wght,offset,center,unitnorm)
+    return Cxx
+
+def updateCxx_s(Cxx, X_TSd, Y_TSye=None, stimTimes=None, tau:int=None, wght:float=1, offset:int=0, center:bool=False, unitnorm:bool=True):
+    '''
+    Args:
+        Cxx_dd (ndarray (d,d)): current data covariance
+        X_TSd (nTrl, nSamp, d): raw response at sample rate
+        Y_TSye = (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
+                nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
+        stimTimes_samp (ndarray (nTrl, nEp)): sample times for start each epoch.  Used to detect
+        wght (float): weight to accumulate this Cxx with the previous data, s.t. Cxx = Cxx_old*wght + Cxx_new.  Defaults to 1.
+        center (bool): flag if center the data before computing covariance? Defaults to True.
+    Returns:
+        Cxx_dd (ndarray (d,d)): current noise data covariance
+    '''
+    # use Y non-zero to estimate the data which does not contain stimulus responses
+    sig_TS = get_signal_indicator(Y_TSye,tau,offset)
+    # only use the *non*-signal data to compute the spatial whitener
+    X = X_TSd[sig_TS,...] if np.sum(sig_TS) > sig_TS.size * .1 else X_TSd
+    Cxx = updateCxx(Cxx,X,stimTimes,tau,wght,offset,center,unitnorm)
+    return Cxx
+
+
 #@function
 def updateCxx(Cxx, X, stimTimes=None, tau:int=None, wght:float=1, offset:int=0, center:bool=False, unitnorm:bool=True):
     '''
     Args:
         Cxx_dd (ndarray (d,d)): current data covariance
         X_TSd (nTrl, nSamp, d): raw response at sample rate
+        Y_TSye = (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
+                nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
         stimTimes_samp (ndarray (nTrl, nEp)): sample times for start each epoch.  Used to detect
         wght (float): weight to accumulate this Cxx with the previous data, s.t. Cxx = Cxx_old*wght + Cxx_new.  Defaults to 1.
         center (bool): flag if center the data before computing covariance? Defaults to True.
@@ -100,8 +189,7 @@ def updateCxx(Cxx, X, stimTimes=None, tau:int=None, wght:float=1, offset:int=0, 
         Cxx_dd (ndarray (d,d)): current data covariance
     '''
     # ensure 3d
-    if X.ndim == 2:
-        X = X[np.newaxis, ...]
+    X = X.reshape( (1,)*(3-X.ndim) + X.shape)
 
     # use X as is, computing purely spatial cov
     # N.B. reshape is expensive with window_axis
@@ -133,8 +221,15 @@ def updateCxy(Cxy, X, Y, stimTimes=None, tau=None, wght=1, offset=0, center=Fals
     '''
     if tau is None: # estimate the tau
         tau = Cxy.shape[-2]
-    if Y.ndim == 3:
-        Y = Y[np.newaxis, :, :, :] # add missing trial dim
+    if X.ndim==2: # put trial dim back in
+        Y = Y.reshape( (1,)*(3-X.ndim) + Y.shape)
+        X = X.reshape( (1,)*(3-X.ndim) + X.shape)
+    if Y.ndim == 3: # add an output dim
+        Y = Y.reshape(Y.shape+(1,)*(4-Y.ndim)) 
+    if X.ndim >3 : # support multiple feature dims
+        X = X.reshape(X.shape[:2]+(-1,))
+    if tau > X.shape[1]:
+        tau = X.shape[1]
     #if offset<-tau+1:
     #    raise NotImplementedError("Cant offset backwards by more than window size")
     #if offset>0:
@@ -142,30 +237,42 @@ def updateCxy(Cxy, X, Y, stimTimes=None, tau=None, wght=1, offset=0, center=Fals
     if verb > 1: print("tau={}".format(tau))
     if stimTimes is None:
         # X, Y are at sample rate, slice X every sample
-        Xe = window_axis(X, winsz=tau, axis=-2) # (nTrl, nSamp, tau, d)
+        #Xe = window_axis(X, winsz=tau, axis=-2) # (nTrl, nSamp, tau, d)
+        inner_len = max(1,X.shape[1]-tau+1)
         # shrink Y w.r.t. the window and shift to align with the offset
-        if offset <=0 : # shift Y forwards
-            Ye = Y[:, -offset:Xe.shape[-3]-offset, :, :] # shift fowards and shrink
+        if offset ==0 : 
+            Ye = Y[:,:inner_len,...]
+        elif offset <0:# shift Y forwards
+            Ye = Y[:, -offset:inner_len-offset, ...] # shift fowards and shrink
             if offset < -tau: # zero pad to size
-                pad = np.zeros(Y.shape[:1]+(Xe.shape[-3]-Ye.shape[1],)+Y.shape[2:], dtype=Y.dtype)
-                Ye = np.append(Ye,pad,1)        
+                pad = np.zeros(Y.shape[:1]+(inner_len-Ye.shape[1],)+Y.shape[2:], dtype=Y.dtype)
+                Ye = np.append(Ye,pad,1)
         elif offset>0: # shift and pad
-            Ye = Y[:, :Xe.shape[-3]-offset, :, :] # shrink
-            pad = np.zeros(Y.shape[:1]+(Xe.shape[-3]-Ye.shape[1],)+Y.shape[2:], dtype=Y.dtype)
+            Ye = Y[:, :inner_len-offset, ...] # shrink
+            pad = np.zeros(Y.shape[:1]+(inner_len-Ye.shape[1],)+Y.shape[2:], dtype=Y.dtype)
             Ye = np.append(pad,Ye,1) # pad to shift forwards
 
     else:
-        Xe = X
-        Ye = Y
-    if Xe.ndim == 3:
-        Xe = Xe[np.newaxis, :, :, :]
+        #Xe = X
+        inner_len = max(1,X.shape[1]-tau+1)
+        Ye = Y[:,:inner_len,...]
 
-    if verb > 1: print("Xe={}\nYe={}".format(Xe.shape, Ye.shape))
+    if verb > 1: 
+        print("X={}\nYe={}".format(X.shape, Ye.shape))
+        print(np.max(Ye))
 
     # LOOPY version as einsum doens't manage the memory well...
-    XY = np.zeros( (Ye.shape[-2],Ye.shape[-1],Xe.shape[-2],Xe.shape[-1]), dtype=Xe.dtype)
-    for tau in range(Xe.shape[-2]):
-        XY[:,:,tau,:] = np.einsum("TSye, TSd->yed", Ye, Xe[:,:,tau,:], casting='unsafe', dtype=Xe.dtype)
+    XY = np.zeros( (Ye.shape[-2],Ye.shape[-1],tau,X.shape[-1]), dtype=X.dtype)
+    for taui in range(tau):
+        # extract shifted X
+        if (tau-taui-1) > 0:
+            Xet = X[:,taui:-(tau-taui-1),...] 
+        else:
+            Xet = X[:,taui:,:,...] 
+        Yet = Y[:,:Xet.shape[1],...]
+        #print("{}/{} X={}  Xet={}".format(taui,tau,X.shape,Xet.shape))
+        XY[:,:,taui,:] = np.einsum("TSye, TSd->yed", Yet, Xet, casting='unsafe', dtype=X.dtype)
+
 
     #XY = np.einsum("TSye, TStd->yetd", Ye.reshape((-1,)+Ye.shape[-2:]), Xe.reshape((-1,)+Xe.shape[-2:]))
 
@@ -198,7 +305,7 @@ def updateCyy(Cyy, Y, stimTime=None, tau=None, wght=1, offset:float=0, zeropadde
       wght (float) : weighting for the new vs. old data
       unitnorm(bool) : flag if we normalize the Cyy with number epochs
     Returns:
-      Cyy_yetet (nY, tau, nE, nE):
+      Cyy_yetet (nY, tau, nE, tau, nE):
     '''
     if perY:
         MM = compCyy_diag_perY(Y,tau,unitnorm=unitnorm) # (tau, nY, nE, nE)
@@ -219,15 +326,14 @@ def Cyy_diag2full(Cyy_tyee):
     """    
     # BODGE: tau-diag Cyy entries to the 'correct' shape
     # (tau,nY,nE,nE) -> (nY,nE,tau,nE,tau)
-    if Cyy_tyee.ndim == 3: # (tau,nE,nE) -> (tau,1,nE,nE)
-        Cyy_tyee = np.reshape(Cyy_tyee,(Cyy_tyee.shape[0],1,Cyy_tyee.shape[1],Cyy_tyee.shape[2]))
-    Cyy_yetet = np.zeros((Cyy_tyee.shape[-3],Cyy_tyee.shape[-2],Cyy_tyee.shape[-4],Cyy_tyee.shape[-2],Cyy_tyee.shape[-4]),dtype=Cyy_tyee.dtype) # (nY,nE,tau,nE,tau)
+    Cyy4_tyee = Cyy_tyee if Cyy_tyee.ndim>3 else Cyy_tyee[:, np.newaxis, ...] # (tau,nE,nE) -> (tau,1,nE,nE)
+    Cyy_yetet = np.zeros((Cyy4_tyee.shape[-3],Cyy4_tyee.shape[-2],Cyy4_tyee.shape[-4],Cyy4_tyee.shape[-2],Cyy4_tyee.shape[-4]),dtype=Cyy_tyee.dtype) # (nY,nE,tau,nE,tau)
     # fill in the block diagonal entries
-    for i in range(Cyy_tyee.shape[-4]):
-        Cyy_yetet[...,:,i,:,i] = Cyy_tyee[0,:,:,:]
-        for j in range(i+1,Cyy_tyee.shape[-4]):
-            Cyy_yetet[...,:,i,:,j] = Cyy_tyee[j-i,:,:,:]
-            Cyy_yetet[...,:,j,:,i] = Cyy_tyee[j-i,:,:,:].swapaxes(-2,-1) # transpose the event types
+    for i in range(Cyy4_tyee.shape[-4]):
+        Cyy_yetet[...,:,i,:,i] = Cyy4_tyee[0,:,:,:]
+        for j in range(i+1,Cyy4_tyee.shape[-4]):
+            Cyy_yetet[...,:,i,:,j] = Cyy4_tyee[j-i,:,:,:]
+            Cyy_yetet[...,:,j,:,i] = Cyy4_tyee[j-i,:,:,:].swapaxes(-2,-1) # transpose the event types
     if Cyy_tyee.ndim==3: # ( 1,nE,tau,nE,tau) -> (nE,tau,nE,tau)
         Cyy_yetet = Cyy_yetet[0,...]
     return Cyy_yetet
@@ -248,25 +354,32 @@ def compCxx_diag(X_TSd, tau:float, offset:float=0, unitnorm:bool=True, center:bo
     if X_TSd.ndim == 2:  # ensure is 3-d
         X_TSd = X_TSd[np.newaxis, ...] 
 
-    # temporal embedding
-    X_TStd = window_axis(X_TSd, winsz=tau, axis=-2)
-    # shrink X w.r.t. the window and shift to align with the offset
-    #X_TSd = X_TSd[:, tau-1:, ...] # shift fowards and shrink
-    X_TSd = X_TSd[:, :X_TStd.shape[-3], ...] # shift fowards and shrink
-    # compute the cross-covariance
-    MM = np.einsum("TStd, TSe->tde", X_TStd, X_TSd, dtype=X_TSd.dtype)
+    if False:
+        # temporal embedding
+        X_TStd = window_axis(X_TSd, winsz=tau, axis=-2)
+        # shrink X w.r.t. the window and shift to align with the offset
+        #X_TSd = X_TSd[:, tau-1:, ...] # shift fowards and shrink
+        X_TSd = X_TSd[:, :X_TStd.shape[-3], ...] # shift fowards and shrink
+        # compute the cross-covariance
+        Cxx_tdd = np.einsum("TStd, TSe->tde", X_TStd, X_TSd, dtype=X_TSd.dtype)
+
+    else: # loopy computation
+        Cxx_tdd = np.zeros((tau,X_TSd.shape[-1],X_TSd.shape[-1]),dtype=X_TSd.dtype) # tau,y,e,y,e
+        Cxx_tdd[0,...] = np.einsum('TSd,TSe->de',X_TSd,X_TSd) # special case as python makes :end+1 hard ...
+        for t in range(1,tau): # manually slide over Y -- as einsum doesn't manage the memory well
+            Cxx_tdd[t,...] = np.einsum('TSd,TSe->de',X_TSd[:,t:,...],X_TSd[:,:-t,...])
 
     if center:
         N = X_TSd.shape[0]*X_TSd.shape[1]
         sX = np.sum(X_TSd.reshape((N,X.shape[-1])),axis=0)
         muXX = np.einsum("i,j->ij",sX,sX) / N
-        MM = MM - muXX
+        Cxx_tdd = Cxx_tdd - muXX
 
     if unitnorm:
         # normalize so the resulting constraint on the estimated signal is that it have
         # average unit norm
-        MM = MM / (X_TSd.shape[0]*X_TSd.shape[1]) # / nTrl*nEp
-    return MM
+        Cxx_tdd = Cxx_tdd / (X_TSd.shape[0]*X_TSd.shape[1]) # / nTrl*nEp
+    return Cxx_tdd
 
 def compCxx_full(X_TSd, tau:float, offset=0, unitnorm:bool=False, center:bool=False):
     '''
@@ -309,6 +422,14 @@ def compCxx_full(X_TSd, tau:float, offset=0, unitnorm:bool=False, center:bool=Fa
     return Cxx_fdfd
 
 def Cxx_diag2full(Cxx_tdd):
+    """ convert compressed cross-auto-cov representation to a full one
+
+    Args:
+        Cxx_tdd ([type]): [description]
+
+    Returns:
+        Cxx_tdtd: the fully completed version
+    """    
     MM = np.zeros((Cxx_tdd.shape[0],Cxx_tdd.shape[1],Cxx_tdd.shape[0],Cxx_tdd.shape[2]), dtype=Cxx_tdd.dtype)
     for t1 in range(Cxx_tdd.shape[0]):
         for t2 in range(Cxx_tdd.shape[0]):
@@ -381,6 +502,7 @@ def compCyx_diag(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
     X_TSd (nTrl, nSamp, d):  raw response for the current stimulus event
             d=#electrodes
     Y_TSye (nTrl, nSamp, nY, nE): Indicator for which events occured for which outputs
+      OR Y_TSy : per-output sequence
             nE=#event-types  nY=#possible-outputs  nEpoch=#stimulus events to process
     Returns:
         Cyx_tyed (nY, nE, tau, d): cross covariance at different offsets
@@ -388,26 +510,32 @@ def compCyx_diag(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
     '''
     if X_TSd.ndim == 2: 
         X_TSd = X_TSd[np.newaxis, ...] 
-    if Y_TSye.ndim == 3:
-        Y_TSye = Y_TSye[np.newaxis, ...] 
+        Y_TSye = Y_TSye[np.newaxis, ...]
+    if Y_TSye.ndim == 3: # add feature dim if needed
+        Y_TSye = Y_TSye[...,np.newaxis] 
     if verb > 1: print("tau={}".format(tau))
     if not hasattr(tau,'__iter__'): tau=(0,tau)
     if offset is None : offset = 0
     if not hasattr(offset,'__iter__'): offset=(0,offset)
 
+    # TODO[]: optimized version for self-computation
+    if X_TSd is Y_TSye : # same input
+        pass
+        #Cyx_tyefd = comp_Cxxdiag(X_TSd, tau=tau, offset=offset, unitnorm=unitnorm, center=center)
+
     # work out a single shift-length for shifting X
     taus = list(range(-(offset[0] + tau[0]-1 - offset[1]), (offset[1] + tau[1]-1 - offset[0])+1))
 
-    MM = np.zeros((len(taus),Y_TSye.shape[-2],Y_TSye.shape[-1],X_TSd.shape[-1]),dtype=X_TSd.dtype)
+    Cyx_tyed = np.zeros((len(taus),)+Y_TSye.shape[2:]+X_TSd.shape[2:],dtype=X_TSd.dtype)
     for i,t in enumerate(taus):
         if t < 0 : # shift Y backwards -> X preceeds Y
-            MM[i,...] = np.einsum('TSye,TSd->yed',Y_TSye[:,-t:,:,:],X_TSd[:,:t,:])
+            Cyx_tyed[i,...] = np.einsum('TS...,TSd->...d',Y_TSye[:,-t:,:,:],X_TSd[:,:t,:])
 
         elif t == 0 : # aligned
-            MM[i,...] = np.einsum('TSye,TSd->yed',Y_TSye,X_TSd)
+            Cyx_tyed[i,...] = np.einsum('TS...,TSd->...d',Y_TSye,X_TSd)
 
         elif t > 0: # shift X backwards -> Y preceeds X
-            MM[i,...] = np.einsum('TSye,TSd->yed',Y_TSye[:,:-t,:,:],X_TSd[:,t:,:])
+            Cyx_tyed[i,...] = np.einsum('TS...,TSd->...d',Y_TSye[:,:-t,:,:],X_TSd[:,t:,:])
 
     if center:
         if verb > 1: print("center")
@@ -415,14 +543,15 @@ def compCyx_diag(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
         muX = np.mean(X_TSd,axis=(0,1)) 
         muY = np.sum(Y_TSye,(0,1))
         muXY_yed= np.einsum("ye,d->yed",muY,muX) 
-        MM = MM - muXY_yed[np.newaxis,...] #(nY,nE,tau,d)
+        Cyx_tyed = Cyx_tyed - muXY_yed[np.newaxis,...] #(nY,nE,tau,d)
 
     if unitnorm:
         # normalize so the resulting constraint on the estimated signal is that it have
         # average unit norm
-        MM = MM / (Y_TSye.shape[0]*Y_TSye.shape[1]) # / nTrl*nEp
+        Cyx_tyed = Cyx_tyed / (Y_TSye.shape[0]*Y_TSye.shape[1]) # / nTrl*nEp
     
-    return MM, taus
+    return Cyx_tyed, taus
+
 
 def compCyx_full(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitnorm=True):
     '''
@@ -446,7 +575,6 @@ def compCyx_full(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
     assert unitnorm==False
     assert center==False
     assert offset==(0,0)
-
 
     # loopy computation
     Cyx_tyefd = np.zeros((tau[1],Y_TSye.shape[-2],Y_TSye.shape[-1],tau[0],X_TSd.shape[-1]), dtype=X_TSd.dtype)
@@ -477,6 +605,16 @@ def compCyx_full(X_TSd, Y_TSye, tau=None, offset=0, center=False, verb=0, unitno
     return Cyx_tyefd
 
 def Cyx_diag2full(Cyx_tyed,tau,offset=None):
+    """ convert compressed cross-auto-cov representation to full one
+
+    Args:
+        Cyx_tyed ([type]): [description]
+        tau ([type]): [description]
+        offset ([type], optional): [description]. Defaults to None.
+
+    Returns:
+        Cyx_tyefd: t x f inflated representation
+    """    
     if not hasattr(tau,'__iter__'): tau=(0,tau)
     assert offset is None or offset == 0 
 
@@ -739,7 +877,7 @@ def cov(X):
     Cxx  = np.einsum("Td, Te->de", X2d, X2d)
     return Cxx
 
-def crossautocov(X, Y, tau, offset=0):
+def crossautocov(X, Y, tau, offset=0, per_trial:bool=False, verb:int=0):
     '''
     Compute the cross-auto-correlation between 2 datasets, X,Y, i.e. the double spatial-temporal covariance
     Inputs:
@@ -767,7 +905,8 @@ def crossautocov(X, Y, tau, offset=0):
         raise NotImplementedError("Offsets not supported yet...")
         
     #TODO[]: optimize for memory usage?
-    if X.shape[0] < 100 and np.issubdtype(X.dtype, np.float) and np.issubdtype(Y.dtype, np.float): # all at once
+    # TODO[]: tau at a time version!
+    if False and X.shape[0] < 100 and np.issubdtype(X.dtype, np.float) and np.issubdtype(Y.dtype, np.float): # all at once
         Xs = window_axis(X, winsz=tau[0], axis=-2) # window of length tau (nTrl, nSamp-tau, tau, d)
         Ys = window_axis(Y, winsz=tau[1], axis=-2) # window of length tau (nTrl, nSamp-tau, tau, d)
         
@@ -780,8 +919,8 @@ def crossautocov(X, Y, tau, offset=0):
         # compute cross-covariance (tau, d, tau, d)
         Ctdtd = np.einsum("Tstd, Tsue -> tdue", Xs, Ys, optimize='optimal')
         
-    else: # trial at a time + convert to float
-        Ctdtd = np.zeros((tau[0], X.shape[-1], tau[1], Y.shape[-1]))
+    elif False: # trial at a time + convert to float
+        Ctdtd = np.zeros((tau[0], X.shape[-1], tau[1], Y.shape[-1]),dtype=X.dtype)
         # different slice time for every trial, up-sample per-trial
         for ti in range(X.shape[0]):  # loop over trials
             
@@ -804,10 +943,48 @@ def crossautocov(X, Y, tau, offset=0):
             # compute cross-covariance (tau, d, tau, d)
             Ctdtd = Ctdtd + np.einsum("Etd, Eue -> tdue", Xi, Yi)
         
+    else:
+        tau_xs = range(tau[0])
+        tau_ys = range(tau[1])
+        # if not hasattr(tau[0],'__iter__'):
+        #     tau_xs = list(range(tau[0])) if tau[0]>=0 else list(range(0,tau[0],-1))
+        # if not hasattr(tau[1],'__iter__'):
+        #     tau_ys = list(range(tau[1])) if tau[1]>=0 else list(range(0,tau[0],-1))
+
+        Ctdtd = np.zeros((len(tau_xs),X.shape[-1],len(tau_ys),Y.shape[-1]),dtype=X.dtype)
+        # different slice time for every trial, up-sample per-trial'
+        if verb>0: print("{}Tr:".format(X.shape[0]),end='')
+        for ti in range(X.shape[0]):  # loop over trials
+            Xi = X[ti,...]
+            Yi = Y[ti,...]
+            Ctdtdi = np.zeros(Ctdtd.shape,dtype=Ctdtd.dtype)
+            if verb>0: print("{} ".format(ti),end='')
+            for tau_x in tau_xs: # manually slide over Y -- as einsum doesn't manage the memory well
+                for tau_y in tau_ys:
+                    # N.B. this is very confusing.  But:
+                    #   t1,t2 are *backwards* shifts in X1,X2 resp
+                    #   shifting X2 backwards by tau means matching: X1_t with X2_(t-tau)
+                    #   do this by aligning: X1_tau with X2_(tau-tau)=X2_0
+                    #      which can be achieved by truncating X1 -> X1[tau:] 
+                    #   Similarly for X2.
+                    #   This leads to the non-intutive result that we 
+                    #      *shift* X1 with X2's tau  and vice.versa!           
+                    if tau_x>tau_y: # t1 shift is bigger, truncate 2 to match lengths
+                        Ctdtdi[tau_x,:,tau_y,:] = Xi[tau_y:-(tau_x-tau_y),:].T @ Yi[tau_x:,:]
+                    elif tau_x==tau_y:
+                        Ctdtdi[tau_x,:,tau_y,:] = Xi[tau_y:,:].T @ Yi[tau_x:,:]
+                    elif tau_x<tau_y:
+                        Ctdtdi[tau_x,:,tau_y,:] = Xi[tau_y:,:].T @ Yi[tau_x:-(tau_y-tau_x),:]
+            # accumulate
+            if per_trial: # store
+                Ctdtd[ti,...] = Ctdtdi
+            else: # accumulate
+                Ctdtd = Ctdtd + Ctdtdi
+        if verb>0: print()
     return Ctdtd
 
 def plot_summary_statistics(Cxx_dd, Cyx_yetd, Cyy_yetet, 
-                            evtlabs=None, outputs=None, times=None, ch_names=None, fs=None, label:str=None):
+                            evtlabs=None, outputs=None, times=None, ch_names=None, fs=None, offset:int=0, label:str=None):
     """Visualize the summary statistics (Cxx_dd, Cyx_yetd, Cyy) of a dataset
 
     It is assumed the data has 'd' channels, with 'nE' different types of
@@ -824,7 +1001,7 @@ def plot_summary_statistics(Cxx_dd, Cyx_yetd, Cyy_yetet,
     """    
     import matplotlib.pyplot as plt
     if times is None:
-        times = np.arange(Cyx_yetd.shape[-2])
+        times = np.arange(Cyx_yetd.shape[-2]) + offset
         if fs is not None:
             times = times / fs
     if ch_names is None:
@@ -862,15 +1039,18 @@ def plot_summary_statistics(Cxx_dd, Cyx_yetd, Cyy_yetet,
         # TODO []: use the ch_names, times to add lables to the  axes
         plt.imshow(Cyx_yetd[ei, :, :].T, aspect='auto', origin='lower', extent=(times[0], times[-1], 0, Cyx_yetd.shape[-1]))
         plt.clim(clim)
-        if nevt>1 and nout>1:
-            title = '{}:{}'.format(outputs[ei//nevt],evtlabs[ei%nevt])
-        elif nevt==1:
-            title = '{}'.format(outputs[ei] if outputs else None)
-        elif nout==1:
-            title = '{}'.format(evtlabs[ei] if evtlabs else None)
-        else:
-            title=[]
-        plt.title(title)
+        try:
+            if nevt>1 and nout>1:
+                title = '{}:{}'.format(outputs[ei//nevt],evtlabs[ei%nevt])
+            elif nevt==1:
+                title = '{}'.format(outputs[ei] if outputs else None)
+            elif nout==1:
+                title = '{}'.format(evtlabs[ei] if evtlabs else None)
+            else:
+                title=[]
+            plt.title(title)
+        except:
+            pass
     # only last one has colorbar
     plt.colorbar()
 
@@ -901,7 +1081,7 @@ def plotCxy(Cyx_yetd,evtlabs=None,fs=None):
 
 def plot_trial(X_TSd,Y_TSy,fs:float=None,
                 ch_names=None,evtlabs=None,outputs=None,times=None, 
-                ylabel:str='ch + output', suptitle:str=None, block:bool=False):
+                ylabel:str='ch + output', suptitle:str=None, show:bool=None):
     """visualize a single trial with data and stimulus sequences
 
     Args:
@@ -909,14 +1089,27 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
         Y_TSy ([type]): raw stimulus sequence
         fs (float, optional): sample rate of data and stimulus. Defaults to None.
         ch_names (list-of-str, optional): channel names for X. Defaults to None.
+        evtlabs (list-of-str, optional): names for the event-types. Defaults to None.
+        outputs (list-of-str, optional): names for the outputs. Defaults to None.
+        times (list-of-float, optional): time in seconds for the samples dim. Defaults to None.
     """    
     import matplotlib.pyplot as plt
-    if X_TSd.ndim==2 : X_TSd=X_TSd[np.newaxis,...]
+    # if X_TSd.shape[1]==1:
+    #     print("Warning: data with no samples?  colapsed")
+    #     X_TSd=X_TSd[:,0,...]
+    #     Y_TSy=Y_TSy[:,0,...]
+    if not X_TSd is None:
+        if X_TSd.ndim<3:
+            X_TSd = X_TSd.reshape( (1,)*(3-X_TSd.ndim) + X_TSd.shape )
+
     if not Y_TSy is None and Y_TSy.ndim==2 : Y_TSy=Y_TSy[np.newaxis,...]
-    times = np.arange(X_TSd.shape[1])/fs if fs is not None else np.arange(X_TSd.shape[1])
-    if ch_names is None: ch_names = np.arange(X_TSd.shape[-1],dtype=int)
-    if outputs is None and not Y_TSy is None:  outputs  = np.arange(Y_TSy.shape[-1 if Y_TSy.ndim==3 else -2])
-    if evtlabs is None and not Y_TSy is None and Y_TSy.ndim==4: evtlabs  = np.arange(Y_TSy.shape[-1])
+    ntrl = X_TSd.shape[0] if X_TSd is not None else Y_TSy.shape[0]
+    nsamp = X_TSd.shape[1] if X_TSd is not None else Y_TSy.shape[1]
+
+    times = np.arange(nsamp)/fs if fs is not None else np.arange(nsamp)
+    if ch_names is None and X_TSd is not None: ch_names = np.arange(X_TSd.shape[2],dtype=int)
+    if outputs is None and not Y_TSy is None:  outputs  = np.arange(Y_TSy.shape[2])
+    if evtlabs is None and not Y_TSy is None and Y_TSy.ndim>=4: evtlabs  = np.arange(np.prod(Y_TSy.shape[3:]))
     # strip unused outputs to simplify plot
     if not Y_TSy is None :
         if Y_TSy.ndim < 4:
@@ -924,30 +1117,49 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
         else:
             Y_TSy=Y_TSy[...,np.any(Y_TSy,axis=tuple(range(Y_TSy.ndim-2))+(-1,)),:]
 
-    print(Y_TSy.shape)
+    #print(Y_TSy.shape)
     linespace = 2 #np.mean(np.abs(X_TSd[X_TSd!=0]))*2
-    for i in range(X_TSd.shape[0]):
-        plt.subplot(X_TSd.shape[0],1,i+1)
-        trlen = np.flatnonzero(np.any(X_TSd[i,...],-1))[-1]
-        for c in range(X_TSd.shape[-1]):
-            tmp = X_TSd[i,...,c]
-            tmp = tmp[...,:trlen]
-            tmp = (tmp - np.mean(tmp.ravel())) / max(1,np.std(tmp[tmp!=0].ravel())) / 2
-            lab = ch_names[c] if c < len(ch_names) else c
-            plt.plot(times[:trlen],tmp+c*linespace,label='X {}'.format(lab))
+    for i in range(ntrl):
+        if i==0:
+            ax1 = plt.subplot(ntrl,1,i+1)
+        else:
+            plt.subplot(ntrl,1,i+1,sharex=ax1,sharey=ax1)
+
+        if X_TSd is not None:
+            xscale = np.percentile(np.abs(X_TSd),70)
+            #print(xscale)
+            trlen = np.flatnonzero(np.any(X_TSd[i,...],-1))[-1]
+            for c in range(X_TSd.shape[-1]):
+                tmp = X_TSd[i,...,c]
+                tmp = tmp[...,:trlen].ravel()
+                tmp = (tmp - np.mean(tmp)) / xscale / 2
+                lab = ch_names[c] if c < len(ch_names) else c
+                if tmp.size < times.size:
+                    plt.plot(times[:trlen],tmp+c*linespace,label='X {}'.format(lab))
+                else:
+                    plt.plot(tmp+c*linespace,label='X {}'.format(lab))
 
         if Y_TSy is not None:
+            nd = X_TSd.shape[-1] if X_TSd is not None else 0
             if Y_TSy.ndim==3:
-                for y in range(Y_TSy.shape[-1]):
-                    tmp = Y_TSy[i,...,y] / np.max(Y_TSy)
-                    plt.plot(times,tmp+y+X_TSd.shape[-1]*linespace+2,'.-',label='Y {}'.format(y))
-            elif Y_TSy.ndim==4:
-                for y in range(Y_TSy.shape[-2]):
-                    out = outputs[y] if y < len(outputs) else y
+                trlen = Y_TSy.shape[1]
+                for y in range(Y_TSy.shape[2]):
+                    tmp = Y_TSy[i,...,y].ravel() / np.max(Y_TSy)
+                    if tmp.size == times.size:
+                        plt.plot(times[:trlen],tmp[:trlen]+y+nd*linespace+2,'.-',label='Y {}'.format(y))
+                    else:
+                        plt.plot(tmp+y+nd*linespace+2,'.-',label='Y {}'.format(y))
+
+            elif Y_TSy.ndim>=4:
+                if Y_TSy.ndim>4:
+                    Y_TSy = Y_TSy.reshape(Y_TSy.shape[:3]+(-1,))
+                trlen = np.flatnonzero(np.any(Y_TSy[i,...],-1))[-1]
+                for y in range(Y_TSy.shape[2]):
+                    out = outputs[y] if outputs is not None and y < len(outputs) else y
                     for e in range(Y_TSy.shape[-1]):
-                        evt = evtlabs[e] if e < len(evtlabs) else e
+                        evt = evtlabs[e] if evtlabs is not None and e < len(evtlabs) else e
                         tmp = Y_TSy[i,...,y,e] / np.max(Y_TSy)
-                        plt.plot(times,tmp+y+X_TSd.shape[-1]*linespace+2+e,'.-',label='Y {}:{}'.format(out,evt))
+                        plt.plot(times[:trlen],tmp[:trlen].ravel()+y+nd*linespace+2+e+y*Y_TSy.shape[2],'.-',label='Y {}:{}'.format(out,evt))
 
         plt.title('Trl {}'.format(i))
         plt.grid(True)
@@ -956,78 +1168,134 @@ def plot_trial(X_TSd,Y_TSy,fs:float=None,
     plt.legend()
     if suptitle:
         plt.suptitle(suptitle)
-    plt.show(block=block)
+    if show is not None: plt.show(block=show)
 
 
-def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None, 
-             axis=-1, plottype='plot', offset=0, ylim=None, suptitle:str=None, block:bool=False):
-    '''
-    Make a multi-plot of the event ERPs (as stored in erp)
-    erp = (nY, nE, tau, d) current per output ERPs
-    '''
-    nevt = erp.shape[-3]
-    nout = erp.shape[-4] if erp.ndim>3 else 1
+def plot_erp(erp_yetd, evtlabs=None, outputs=None, times=None, fs:float=None, ch_names=None, ch_pos=None,
+             axis:int=-1, plottype='plot', offset:int=0, offset_ms:float=None, ylim=None, suptitle:str=None, show:bool=None):
+    """    Make a multi-plot of the event ERPs (as stored in erp)
+
+    Args:
+        erp_yetd (_type_): The ERP to be ploted with shape (#outputs, #events-types, #samples, #channels)
+        evtlabs (list-of-str, optional): names for the event-types. Defaults to None.
+        outputs (list-of-str, optional): names for the outputs. Defaults to None.
+        times (list-of-float, optional): time in seconds for the samples dim. Defaults to None.
+        fs (float, optional): sample rate of the data. Defaults to None.
+        ch_names (list-of-str, optional): names for the channels. Defaults to None.
+        ch_pos (list-of-2tuple, optional): 2d position for the channels for plot positioning.  If None then attempt to get these positions from the channel-names. Defaults to None.
+        axis (int, optional): axis of ERP to slice to make individual plots.  If axis=-2 and we have position info then make a spatially distributed plot. Defaults to -1.
+        plottype (str, optional): type of plot to make.  One of: 'plot'=line-plot, 'plott'=line plot with axes swapped, 'image'=image. Defaults to 'plot'.
+        offset (int, optional): 0-time offset in samples. Defaults to 0.
+        offset_ms (float, optional): 0-time offset in milliseconds. Defaults to None.
+        ylim (2-tuple, optional): y-limits for the sub-plots.  If None auto-fit to data. Defaults to None.
+        suptitle (str, optional): super-title for the plot. Defaults to None.
+        show (bool, optional): If not None, call plt.show() when plot is ready with block=show. Defaults to None.
+    """
+    import matplotlib.pyplot as plt
+
+    # ensure 4-d
+    if erp_yetd.ndim<4:
+        erp_yetd=erp_yetd.reshape( (1,)*(4-erp_yetd.ndim)+erp_yetd.shape)
+    elif erp_yetd.ndim>4:
+        # make 4d
+        print("Warning: extra dims compressed into event types..")
+        erp_yetd=np.moveaxis(erp_yetd,-2,2) # shift features (dim-2) before events
+        #evtlabs=None
+
+    nevt = erp_yetd.shape[-3] if erp_yetd.ndim>2 else 1
+    nout = np.prod(erp_yetd.shape[:-3]) if erp_yetd.ndim>3 else 1
+
     if outputs is None:
         outputs = ["{}".format(i) for i in range(nout)]
     if evtlabs is None:
         evtlabs = ["{}".format(i) for i in range(nevt)]
     if times is None:
-        times = list(range(offset,erp.shape[-2]+offset))
+        times = list(range(erp_yetd.shape[-2]))
+        if offset is not None:
+            times = [ t+offset for t in times ]
         if fs is not None:
             times = [ t/fs for t in times ]
-    if ch_names is None:
-        ch_names = ["{}".format(i) for i in range(erp.shape[-1])]
+            if offset_ms is not None:
+                times = [ t + offset_ms / 1000 for t in times ]
 
-    if erp.ndim > 3:
-        if erp.shape[0]>1 :
-            print("Multiple Y's merged!")
-        erp = erp.reshape((-1,erp.shape[-2],erp.shape[-1]))
-        # update evtlabs with the outputs info
-        if nevt>1 and nout>1:
-            evtlabs = [ "{}:{}".format(o,e) for o in outputs for e in evtlabs]
-        elif nevt==1 and nout>1:
-            evtlabs = outputs
-    elif erp.ndim == 2:
-        erp = erp[np.newaxis,...]
+    if ch_pos is None and ch_names is not None:
+        ch_pos, iseeg = get_ch_pos(ch_names)
+        if np.sum(iseeg)<len(ch_names)*.7:
+            print("Warning: couldn't match channel names....")
+            ch_pos, iseeg = None, None
+
+    if ch_names is None:
+        ch_names = ["{}".format(i) for i in range(erp_yetd.shape[-1])]
+
+    if erp_yetd.shape[0]>1 :
+        print("Multiple Y's merged!")
+    erp_etd = erp_yetd.reshape((-1,)+erp_yetd.shape[-2:])
+    # update evtlabs with the outputs info
+    if nevt>1 and nout>1:
+        evtlabs = [ "{}:{}".format(o,e) for o in outputs for e in evtlabs]
+    elif nevt==1 and nout>1:
+        evtlabs = outputs
+
+    # BODGE: for no-time dim and multiple feature dims...
+    if erp_etd.shape[1]==1:
+        print("Warning: no time values? compressing to show features")
+        erp_etd=erp_etd[:,0,...]
+        if erp_etd.ndim<3: 
+            erp_etd=erp_etd[...,np.newaxis] # add in ch-dim
+            times = ch_names
+            ch_names = '?'
+        else:
+            times = list(range(erp_etd.shape[1]))
 
     icoords = evtlabs
     jcoords = times
     kcoords = ch_names 
     if axis<0:
-        axis = erp.ndim+axis
-    clim = [np.min(erp.flat), np.max(erp.flat)]
-    import matplotlib.pyplot as plt
+        axis = erp_etd.ndim+axis
+    clim = [np.nanpercentile(erp_etd,5), np.nanpercentile(erp_etd,95)]
+    #clim = [np.nanmedian(np.nanmin(erp_etd,axis=(0,1))), np.nanmedian(np.nanmax(erp_etd,axis=(0,1)))]
+    if clim[0]==clim[1]: clim=[-1,1]
+    if any(np.isnan(clim)) or any(np.isinf(clim)): clim=None
 
-    print("erp={}".format(erp.shape))
+    # print("erp_etd={}".format(erp_etd.shape))
+    # print(" {}, {}, {} ".format(icoords, jcoords, kcoords))
     
     # plot per channel
-    ncols = int(np.ceil(np.sqrt(erp.shape[axis])))
-    nrows = int(np.ceil(erp.shape[axis]/ncols))
+    ncols = int(np.ceil(np.sqrt(erp_etd.shape[axis])))
+    nrows = int(np.ceil(erp_etd.shape[axis]/ncols))
     # make the bottom left axis to share its limits..
-    axploti = ncols*(nrows-1)
-    ax = plt.subplot(nrows,ncols,axploti+1)
+    if ch_pos is not None:
+        from mindaffectBCI.decoder.plot_utils.posplot import posplot
+        axploti = np.argmin(np.sum(ch_pos,axis=1))
+        ax = posplot(XYs=ch_pos, idx=axploti, sizes='equal')
+    else:
+        axploti = ncols*(nrows-1)
+        ax = plt.subplot(nrows,ncols,axploti+1)
     #fig, plts = plt.subplots(nrows, ncols, sharex='all', sharey='all', squeeze=False)
-    for ci in range(erp.shape[axis]):
+    for ci in range(erp_etd.shape[axis]):
         # make the axis
         if ci==axploti: # common axis plot
             pl = ax
         else: # normal plot
-            pl = plt.subplot(nrows,ncols,ci+1,sharex=ax, sharey=ax) # share limits
+            if ch_pos is not None:
+                pl = posplot(XYs=ch_pos, idx=ci, sizes='equal')
+            else:
+                pl = plt.subplot(nrows,ncols,ci+1,sharex=ax, sharey=ax) # share limits
             plt.tick_params(labelbottom=False,labelleft=False) # no labels
 
         # get the slice for the data to plot,  and it's coords
         if axis == 0:
-            A = erp[ci, :, :] # (time,ch)
+            A = erp_etd[ci, :, :] # (time,ch)
             pltcoords = icoords
             xcoords = jcoords
             ycoords = kcoords
         elif axis == 1:
-            A = erp[:, ci, :] # (evtcoords,ch)
+            A = erp_etd[:, ci, :] # (evtcoords,ch)
             xcoords = icoords
             pltcoords = jcoords
-            ycoords = kcoords            
+            ycoords = kcoords
         elif axis == 2:
-            A = erp[:, :, ci] # (evtlabs,time)
+            A = erp_etd[:, :, ci] # (evtlabs,time)
             xcoords = icoords
             ycoords = jcoords
             pltcoords = kcoords
@@ -1035,51 +1303,210 @@ def plot_erp(erp, evtlabs=None, outputs=None, times=None, fs=None, ch_names=None
         # make the plot of the desired type
         if plottype == 'plot':
             for li in range(A.shape[0]):
-                pl.plot(ycoords, A[li, :], '.-', label=xcoords[li], markersize=1, linewidth=1)
-            if ylim: plt.ylim(ylim)
+                pl.plot(ycoords, A[li, :], '.-', label=xcoords[li] if li<len(xcoords) else None, markersize=1, linewidth=1)
+            if clim: 
+                plt.ylim(clim)
             pl.grid(True)
         elif plottype == 'plott':
             for li in range(A.shape[1]):
-                pl.plot(xcoords, A[:, li], '.-', label=ycoords[li], markersize=1, linewidth=1)
-            if ylim: plt.ylim(ylim)
+                pl.plot(xcoords, A[:, li], '.-', label=ycoords[li] if li<len(ycoords) else None, markersize=1, linewidth=1)
+            if clim: 
+                plt.ylim(clim)
             pl.grid(True)
         elif plottype == 'imshow':
             # TODO[] : add the labels to the rows
-            img=pl.imshow(A, aspect='auto')#,extent=[times[0],0,times[-1],erp.shape[-3]])
+            img=pl.imshow(A, aspect='auto')#,extent=[times[0],0,times[-1],erp_yetd.shape[-3]])
             pl.set_xticks(np.arange(len(ycoords)));pl.set_xticklabels(ycoords)
             pl.set_yticks(np.arange(len(xcoords)));pl.set_yticklabels(xcoords)
-            img.set_clim(clim)
+            if clim:
+                img.set_clim(clim)
         pl.title.set_text("{}".format(pltcoords[ci] if ci<len(pltcoords) else ci))
     # legend only in the last plot
     pl.legend()
     if suptitle:
         plt.suptitle(suptitle)
-    if block is not None:
-        plt.show(block=block)
+    if show is not None:
+        plt.show(block=show)
+
+def get_ch_pos(ch_names):
+    """give a set of channel names, get the 2d positions by matching to 1010 names
+
+    Args:
+        ch_names (list-of-str): channel names to get position for
+
+    Returns:
+        list-of-2tuple, list-of-bool: 2d-channel positions, iseeg match status
+    """    
+    #print("trying to get pos from cap file!")
+    from mindaffectBCI.decoder.readCapInf import getPosInfo
+    cnames, xy, xyz, iseeg =getPosInfo(ch_names)
+    return xy, iseeg
 
 
-def plot_factoredmodel(A, R, S=None, 
-                        evtlabs=None, times=None, ch_names=None, ch_pos=None, fs=None, 
-                        offset_ms=None, offset=None, spatial_filter_type="Filter", label=None, ncol=2):
-    '''
-    Make a multi-plot of a factored model
-    A_kd = k components and d sensors
-    R_ket = k components, e events, tau samples response-duration
-    '''
+def topoplot(A,ch_names=None, ch_pos=None, ax=None, levels=None, cRng=None, channel_labels:bool=True, cmap:str='bwr', colorbar:bool=True):
+    """make a topographic image plot of the data on an iconic 'head'
+
+    Args:
+        A (ndarray): the data to plot with shape (#channels)
+        ch_names (list-of-str, optional): The names of the channels in A. Defaults to None.
+        ch_pos (list-of-2tuple, optional): The 2d position of the channels.  If None then attempt to find these by matching ch_names to the 1010 positions. Defaults to None.
+        ax (Axes, optional): An axes to use for the plot.  If None make new axis. Defaults to None.
+        levels (_type_, optional): List of levels for contour lines in the plot. Defaults to None.
+        cRng (2-tuple-of-float, optional): color range for the topoplot. Defaults to None.
+        channel_labels (bool, optional): If True then show channel labels on the topoplot. Defaults to True.
+        cmap (str, optional): colormap to use for the image. Defaults to 'bwr'.
+        colorbar (bool, optional): If True then show colorbar beside the topoplot. Defaults to True.
+    """    
+    import matplotlib.pyplot as plt
+    if ch_pos is None and not ch_names is None:
+        try:
+            ch_pos, iseeg = get_ch_pos(ch_names)
+            if sum(iseeg)>len(iseeg)*.7:
+                print("Warning: couldnt get position for all channels.  Plotting subset.")
+                A=A[...,iseeg] # guard against in-place changes
+                ch_pos = ch_pos[iseeg,:]
+                ch_names = [c for c,e in zip(ch_names,iseeg) if e]
+        except:
+            pass
+
+    if cRng is None: cRng= np.max(np.abs(A.reshape((-1))))
+    if not hasattr(cRng,'__iter__'): cRng = (-cRng,cRng)
+    
+    if ax is None: ax=plt.gca()
+    if not ch_pos is None: # make as topoplot
+        if levels is None: levels = np.linspace(cRng[0],cRng[-1],20)
+        tt=ax.tricontourf(ch_pos[:,0],ch_pos[:,1],A[:ch_pos.shape[0]],levels=levels,cmap=cmap)
+        # BODGE: deal with co-linear inputs by replacing each channel with a triangle of points
+        #interp_pos = np.concatenate((ch_pos+ np.array((0,.1)), ch_pos + np.array((-.1,-.05)), ch_pos + np.array((+.1,-.05))),0)
+        #tt=pA.tricontourf(interp_pos[:,0],interp_pos[:,1],np.tile(A[:ch_pos.shape[0]]*sgn,3),levels=levels,cmap='Spectral')
+        if channel_labels:
+            for i,n in enumerate(ch_names):
+                #pA.plot(ch_pos[i,0],ch_pos[i,1],'.',markersize=5) # marker
+                ax.text(ch_pos[i,0],ch_pos[i,1],n,ha='center',va='center') # label
+        ax.set_aspect(aspect='equal')
+        ax.set_frame_on(False) # no frame
+        ax.tick_params(labelbottom=False,labelleft=False,which='both',bottom=False,left=False) # no labels, ticks
+        if colorbar:
+            plt.colorbar(tt)
+    else:
+        ax.plot(ch_names,A,'.-')
+        ax.set_ylim(cRng)
+        ax.grid(True)
+
+def topoplots(A,ch_names=None, ch_pos=None, axs=None, nrows=None, ncols=None, levels=None, cRng=None, titles:list=None, channel_labels:bool=False, cmap:str='bwr',colorbar:bool=False):
+    import matplotlib.pyplot as plt
+    if ch_pos is None and not ch_names is None:
+        ch_pos, iseeg = get_ch_pos(ch_names)
+        if not np.all(iseeg) and sum(iseeg)>len(iseeg)*.7:
+            print("Warning: couldnt get position for all channels.  Plotting subset.")
+            A=A[...,iseeg] # guard against in-place changes
+            ch_pos = ch_pos[iseeg,:]
+            ch_names = [c for c,e in zip(ch_names,iseeg) if e]
+
+    if cRng is None: cRng= np.max(np.abs(A))
+    A_kd = A.reshape((-1,A.shape[-1]))
+
+    # get the axes
+    if axs is None:
+        if nrows is None and ncols is None: 
+            nrows = int(np.ceil(np.sqrt(A_kd.shape[0])))
+        if nrows is None:
+            nrows = int(np.ceil(A_kd.shape[0]/ncols))
+        if ncols is None:
+            ncols = int(np.ceil(A_kd.shape[0]/nrows))
+        fig, axs = plt.subplots(nrows=nrows,ncols=ncols, sharex=True, sharey=True)
+
+    # do the plots
+    for i, (A_d, ax) in enumerate(zip(A_kd,axs.ravel())):
+        #ax.set_()
+        topoplot(A_d, ch_names, ch_pos,ax=ax, cRng=cRng, channel_labels=channel_labels,colorbar=colorbar,cmap=cmap)
+        if titles is not None:
+            ax.title(titles[i])
+
+    # turn the frames off from an unused plots
+    for ax in axs.ravel()[A_kd.shape[0]:]:
+        ax.set_frame_on(False)
+        ax.tick_params(labelbottom=False,labelleft=False,which='both',bottom=False,left=False)
+
+    # TODO[]: big colorbar at the side of the full set of plots
+    return axs
+
+
+def plot_spatial_components(A,ch_names=None,ncols=2,nrows=None,ch_pos=None,channel_labels=True,colorbar=True,normalize:bool=False):
+    import matplotlib.pyplot as plt
     A=A.copy()
-    R=R.copy()
     if A.ndim > 2:
         if A.shape[0]>1 :
             print("Warning: multiple filters ploted at once")
         A = A.reshape((-1,A.shape[-1]))
     if A.ndim < 2:
         A = A[np.newaxis, :]
+
+    if nrows==None: nrows=A.shape[0]
+
+    if ch_pos is None and ch_names is not None:
+        if not len(ch_names) == A.shape[-1]:
+            print("Warning: channel names don't match dimension size!")
+            if len(ch_names)>A.shape[-1]*.75:
+                ch_names=ch_names[:A.shape[-1]]
+            else:
+                ch_names=None
+    if not ch_names is None:
+        # try to load position info from capfile
+        try: 
+            #print("trying to get pos from cap file!")
+            from mindaffectBCI.decoder.readCapInf import getPosInfo
+            cnames, xy, xyz, iseeg =getPosInfo(ch_names)
+            if all(iseeg):
+                ch_pos = xy
+            elif sum(iseeg)>len(iseeg)*.7:
+                print("Warning: couldnt get position for all channels.  Plotting subset.")
+                A=A[...,iseeg] # guard against in-place changes
+                ch_pos = xy[iseeg,:]
+                ch_names = [c for c,e in zip(ch_names,iseeg) if e]
+        except:
+            pass
+    if ch_names is None:
+        ch_names = np.arange(A.shape[-1])
+
+
+    cRng= np.max(np.abs(A.reshape((-1))))
+    levels = np.linspace(-cRng,cRng,20)
+
+    # plot per component
+    # start at the bottom to share the axis
+    for ci in range(A.shape[0]):
+        # make the axis
+        subploti=(nrows-1-ci)*ncols
+        if ci==0: # common axis plot
+            axA = plt.subplot(nrows, ncols, subploti+1) # share limits
+            axA.set_xlabel("Space")
+            pA = axA
+            channel_label = channel_labels
+        else: # normal plot
+            pA = plt.subplot(nrows, ncols, subploti+1, sharex=axA, sharey=axA) 
+            plt.tick_params(labelbottom=False,labelleft=False) # no labels
+            channel_label = False
+
+        # make the spatial plot
+        sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.aabs(R[ci,...]))]) # normalize directions
+        try:
+            topoplot(A[ci,:]*sign,ch_names=ch_names,ch_pos=ch_pos,ax=pA,levels=levels,colorbar=colorbar, channel_labels=channel_label)
+        except:
+            pA.plot(ch_names,A[ci,:]*sign,'.-')
+            pA.set_ylim((-cRng,cRng))
+            pA.grid(True)
+
+        #pA.title.set_text("Spatial {} #{}".format(spatial_filter_type,ci))
+
+def plot_temporal_components(R,fs=1,ncols=2,nrows=None,normalize=False,times=None,evtlabs=None):
+    import matplotlib.pyplot as plt
+    R=R.copy()
     if R.ndim > 3:
-        if R.shape[0]>1 :
-            print("Warning: only the 1st set ERPs is plotted")
-        R = R[0, ...]
+        if R.shape[0]==1: R = R[0, ...] # remove uncessary dim
     if R.ndim < 3:
         R = R[np.newaxis, :]
+    if nrows is None: nrows=R.shape[0]
 
     if times is None:
         times = np.arange(R.shape[-1])
@@ -1089,70 +1516,12 @@ def plot_factoredmodel(A, R, S=None,
             times = times / fs
         if offset_ms is not None:
             times = times + offset_ms/1000
-    if ch_names is not None:
-        if not len(ch_names) == A.shape[-1]:
-            print("Warning: channel names don't match dimension size!")
-            if len(ch_names)>A.shape[-1]:
-                ch_names=ch_names[:A.shape[-1]]
-            else:
-                ch_names=None
-    if ch_pos is None and not ch_names is None:
-        # try to load position info from capfile
-        try: 
-            print("trying to get pos from cap file!")
-            from mindaffectBCI.decoder.readCapInf import getPosInfo
-            cnames, xy, xyz, iseeg =getPosInfo(ch_names)
-            if all(iseeg):
-                ch_pos = xy
-        except:
-            pass
-    if ch_names is None:
-        ch_names = np.arange(A.shape[-1])
+
     if evtlabs is None:
         evtlabs = np.arange(R.shape[-2])
-        
-    import matplotlib.pyplot as plt
 
-    print("A={} R={}".format(A.shape, R.shape))
-    
-    # plot per component
-    ncols = ncol #int(np.ceil(np.sqrt(A.shape[0])))
-    nrows = A.shape[0] #int(np.ceil(A.shape[0]/ncols))
-    # start at the bottom to share the axis
-    for ci in range(A.shape[0]):
-        # make the axis
-        subploti=(nrows-1-ci)*ncols
-        if ci==0: # common axis plot
-            axA = plt.subplot(nrows, ncols, subploti+1) # share limits
-            axA.set_xlabel("Space")
-            pA = axA
-        else: # normal plot
-            pA = plt.subplot(nrows, ncols, subploti+1, sharex=axA, sharey=axA) 
-            plt.tick_params(labelbottom=False,labelleft=False) # no labels
+    rRng =  np.max(np.abs(R.reshape((-1))))
 
-        # make the spatial plot
-        sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.abs(R[ci,...]))]) # normalize directions
-        if not ch_pos is None: # make as topoplot
-            cRng= np.max(np.abs(A.reshape((-1))))
-            levels = np.linspace(-cRng,cRng,20)
-            tt=pA.tricontourf(ch_pos[:,0],ch_pos[:,1],A[ci,:]*sign,levels=levels,cmap='Spectral')
-            # BODGE: deal with co-linear inputs by replacing each channel with a triangle of points
-            #interp_pos = np.concatenate((ch_pos+ np.array((0,.1)), ch_pos + np.array((-.1,-.05)), ch_pos + np.array((+.1,-.05))),0)
-            #tt=pA.tricontourf(interp_pos[:,0],interp_pos[:,1],np.tile(W[ri,:]*sgn,3),levels=levels,cmap='Spectral')
-            for i,n in enumerate(ch_names):
-                #pA.plot(ch_pos[i,0],ch_pos[i,1],'.',markersize=5) # marker
-                pA.text(ch_pos[i,0],ch_pos[i,1],n,ha='center',va='center') # label
-            pA.set_aspect(aspect='equal')
-            pA.set_frame_on(False) # no frame
-            plt.tick_params(labelbottom=False,labelleft=False,which='both',bottom=False,left=False) # no labels, ticks
-            plt.colorbar(tt)
-        else:
-            pA.plot(ch_names,A[ci,:]*sign,'.-')
-            pA.grid(True)
-
-        pA.title.set_text("Spatial {} #{}".format(spatial_filter_type,ci))
-
-    # plot temmporal components
     for ci in range(R.shape[0]):
         # make the axis
         subploti=(nrows-1-ci)*ncols
@@ -1164,25 +1533,266 @@ def plot_factoredmodel(A, R, S=None,
         else: # normal plot
             pR = plt.subplot(nrows, ncols, subploti+2, sharex=axR, sharey=axR) 
             pR.grid(True)
+            pR.tick_params(axis='both',which='both',bottom=False, left=False, labelbottom=False,labelleft=False) # no labels
 
         sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.abs(R[ci,...]))]) # normalize directions
         # make the temporal plot, with labels, N.B. use loop so can set each lines label
-        for e in range(R.shape[-2]):
-            pR.plot(times,R[ci,e,:]*sign,'.-',label=evtlabs[e])
-        pR.title.set_text("Impulse Response #{}".format(ci))
 
-    # legend in the temporal plot
-    axR.legend()
+        for e in range(R.shape[-2]):
+            Re = R[ci,e,:]*sign
+            if norm_temporal: Re = Re / np.sqrt(np.sum(Re*Re))
+            pR.plot(times,Re,'.-',label=evtlabs[e] if e<len(evtlabs) else e)
+        pR.set_ylim((-rRng,rRng))
+        # legend in the temporal plot
+        axR.legend()
+
+def plot_per_output_temporal_components(R_kyet,fs=1,ncols=2,nrows=None,normalize=False,evtlabs=None,outputs=None):
+    import matplotlib.pyplot as plt
+    R_kyet=R_kyet.copy()
+    if R_kyet.ndim > 4:
+        if R_kyet.shape[0]==1: R_kyet = R_kyet[0, ...] # remove uncessary dim
+    if R_kyet.ndim < 4:
+        R_kyet = R_kyet[np.newaxis, :]
+    if nrows is None: nrows=R_kyet.shape[0]
+
+    yscale = np.max(np.abs(R_kyet))
+    xscale = 1
+    times  = np.linspace(0,1,R_kyet.shape[-1])
+    for ci in range(R_kyet.shape[0]):
+        # make the axis
+        subploti=(nrows-1-ci)*ncols
+        if ci==0: # common axis plot
+            axR = plt.subplot(nrows, ncols, subploti+2) # share limits
+            axR.set_xlabel("Event")
+            axR.set_ylabel('Output')
+            axR.grid(True)
+            pR = axR
+            if outputs is not None:
+                axR.set_yticks(np.arange(R_kyet.shape[1]))
+                axR.set_yticklabels(outputs)
+            if evtlabs is not None:
+                axR.set_xticks(np.arange(R_kyet.shape[2]))
+                axR.set_xticklabels(evtlabs)
+        else: # normal plot
+            pR = plt.subplot(nrows, ncols, subploti+2, sharex=axR, sharey=axR) 
+            pR.grid(True)
+            pR.tick_params(axis='both',which='both',bottom=False, left=False, labelbottom=False,labelleft=False) # no labels
+
+        sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.abs(R[ci,...]))]) # normalize directions
+        # make the temporal plot, with labels, N.B. use loop so can set each lines label
+
+        for yi in range(R_kyet.shape[1]):
+            for ei in range(R_kyet.shape[2]):
+                plt.plot(times+xscale*ei,R_kyet[ci,yi,ei,:]*.7/yscale+yi)
+
+
+
+# def plot_factoredmodel(A, R, S=None, 
+#                         evtlabs=None, times=None, ch_names=None, ch_pos=None, fs=None, 
+#                         offset_ms=None, offset=None, 
+#                         spatial_filter_type="Filter", temporal_filter_type="Filter", 
+#                         norm_temporal:bool=False, norm_spatial:bool=False, suptitle=None, ncol=2, 
+#                         channel_labels:bool=True, colorbar:bool=True, show:bool=None):
+#     '''
+#     Make a multi-plot of a factored model
+#     A_kd = k components and d sensors
+#     R_ket = k components, e events, tau samples response-duration
+#     '''
+#     import matplotlib.pyplot as plt
+
+#     #print("A={} R={}".format(A.shape if A is not None else None, R.shape if R is not None else None ))
+#     ncols = ncol #int(np.ceil(np.sqrt(A.shape[0])))
+#     nrows = A.shape[0] if A is not None else R.shape[0] #int(np.ceil(A.shape[0]/ncols))
+
+#     # plot the spatial components
+#     if A is not None:
+#         plot_spatial_components(A,ch_names,ncols,channel_labels=channel_labels,colorbar=colorbar, normalize=norm_temporal)
+
+#     # plot temmporal components
+#     if R is not None:
+#         plot_temporal_components(R,fs,ncols, normalize=norm_temporal)
+#         #pR.title.set_text("Temporal {} #{}".format(temporal_filter_type,ci))
+
+#     if suptitle:
+#         plt.suptitle(suptitle)
+#     if show is not None:
+#         plt.show(block=show)
+
+
+
+def plot_factoredmodel(A, R, S=None, 
+                        evtlabs=None, times=None, ch_names=None, ch_pos=None, fs=None, 
+                        offset_ms=None, offset=None, 
+                        spatial_filter_type="Filter", temporal_filter_type="Filter", 
+                        norm_temporal:bool=False, norm_spatial:bool=False, suptitle=None, ncol=2, 
+                        channel_labels:bool=True, colorbar:bool=False, show:bool=None):
+    """_summary_
+
+    Args:
+        A (ndarray): spatial-factor, with shape A_kd =  k components and d sensors
+        R (ndarray): temporal-factor, with shape R_ket = k components, e events, tau samples response-duration
+        S (list-of-float, optional): Weighting for each of the k-components of the model. Defaults to None.
+        evtlabs (list-of-str, optional): names for the event-types. Defaults to None.
+        outputs (list-of-str, optional): names for the outputs. Defaults to None.
+        times (list-of-float, optional): time in seconds for the samples dim. Defaults to None.
+        fs (float, optional): sample rate of the data. Defaults to None.
+        ch_names (list-of-str, optional): names for the channels. Defaults to None.
+        ch_pos (list-of-2tuple, optional): 2d position for the channels for plot positioning.  If None then attempt to get these positions from the channel-names. Defaults to None.
+        axis (int, optional): axis of ERP to slice to make individual plots.  If axis=-2 and we have position info then make a spatially distributed plot. Defaults to -1.
+        plottype (str, optional): type of plot to make.  One of: 'plot'=line-plot, 'plott'=line plot with axes swapped, 'image'=image. Defaults to 'plot'.
+        offset (int, optional): 0-time offset in samples. Defaults to 0.
+        offset_ms (float, optional): 0-time offset in milliseconds. Defaults to None.
+        ylim (2-tuple, optional): y-limits for the sub-plots.  If None auto-fit to data. Defaults to None.
+        suptitle (str, optional): super-title for the plot. Defaults to None.
+        show (bool, optional): If not None, call plt.show() when plot is ready with block=show. Defaults to None.
+        channel_labels (bool, optional): If True then show channel labels on the topoplot. Defaults to True.
+        colorbar (bool, optional): If True then show colorbar beside the topoplot. Defaults to True.
+        spatial_filter_type (str, optional): Label for the type of spatial component shown. Defaults to "Filter".
+        temporal_filter_type (str, optional): Label for the type of temporal component shown. Defaults to "Filter".
+        norm_temporal (bool, optional): If True then normalize the temporal component to unit length before plotting. Defaults to False.
+        norm_spatial (bool, optional): If True then normalize the spatial component to unit length before plotting. Defaults to False.
+        ncol (int, optional): Number of columns to use in plt.subplot. Defaults to 2.
+    """
+    import matplotlib.pyplot as plt
+
+    #print("A={} R={}".format(A.shape if A is not None else None, R.shape if R is not None else None ))
+    ncols = ncol #int(np.ceil(np.sqrt(A.shape[0])))
+    nrows = A.shape[0] if A is not None else R.shape[0] #int(np.ceil(A.shape[0]/ncols))
+
+    if A is not None:
+        A=A.copy()
+        if A.ndim > 2:
+            if A.shape[0]>1 :
+                print("Warning: multiple filters ploted at once")
+            A = A.reshape((-1,A.shape[-1]))
+        if A.ndim < 2:
+            A = A[np.newaxis, :]
+
+        if ch_names is not None:
+            if not len(ch_names) == A.shape[-1]:
+                print("Warning: channel names don't match dimension size!")
+                if len(ch_names)>A.shape[-1]*.75:
+                    ch_names=ch_names[:A.shape[-1]]
+                elif A.shape[-1]%len(ch_names)==0:
+                    A = A.reshape((A.shape[0],-1,A.shape[-1]))
+                else:
+                    ch_names=None
+        if ch_pos is None and not ch_names is None:
+            # try to load position info from capfile
+            try: 
+                #print("trying to get pos from cap file!")
+                from mindaffectBCI.decoder.readCapInf import getPosInfo
+                cnames, xy, xyz, iseeg =getPosInfo(ch_names)
+                if all(iseeg):
+                    ch_pos = xy
+                elif sum(iseeg)>len(iseeg)*.7:
+                    print("Warning: couldnt get position for all channels.  Plotting subset.")
+                    A=A[...,iseeg] # guard against in-place changes
+                    ch_pos = xy[iseeg,:]
+                    ch_names = [c for c,e in zip(ch_names,iseeg) if e]
+            except:
+                pass
+        if ch_names is None:
+            ch_names = np.arange(A.shape[-1])
+
+
+        cRng= np.max(np.abs(A.reshape((-1))))
+        levels = np.linspace(-cRng,cRng,20)
+
+        # plot per component
+        # start at the bottom to share the axis
+        for ci in range(A.shape[0]):
+            # make the axis
+            subploti=(nrows-1-ci)*ncols
+            if ci==0: # common axis plot
+                axA = plt.subplot(nrows, ncols, subploti+1) # share limits
+                axA.set_xlabel("Space")
+                pA = axA
+                channel_label = channel_labels
+            else: # normal plot
+                pA = plt.subplot(nrows, ncols, subploti+1, sharex=axA, sharey=axA) 
+                plt.tick_params(labelbottom=False,labelleft=False) # no labels
+                channel_label = False
+
+            # make the spatial plot
+            sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.aabs(R[ci,...]))]) # normalize directions
+            try:
+                if A.ndim>2:
+                    topoplots(A[ci,...].T*sign,ch_names=ch_names,ch_pos=ch_pos,ax=pA,levels=levels,colorbar=colorbar, channel_labels=channel_label)
+                else:
+                    topoplot(A[ci,...].T*sign,ch_names=ch_names,ch_pos=ch_pos,ax=pA,levels=levels,colorbar=colorbar, channel_labels=channel_label)
+            except:
+                pA.plot(ch_names,A[ci,...].T*sign,'.-')
+                pA.set_ylim((-cRng,cRng))
+                pA.grid(True)
+
+            #pA.title.set_text("Spatial {} #{}".format(spatial_filter_type,ci))
+
+    # plot temmporal components
+    if R is not None:
+        R=R.copy()
+        if R.ndim > 3:
+            if R.shape[0]>1 :
+                print("Warning: only the 1st set ERPs is plotted")
+            R = R[0, ...]
+        if R.ndim < 3:
+            R = R[np.newaxis, :]
+
+        if times is None:
+            times = np.arange(R.shape[-1])
+            if offset is not None:
+                times = times + offset
+            if fs is not None:
+                times = times / fs
+            if offset_ms is not None:
+                times = times + offset_ms/1000
+
+        if evtlabs is None:
+            evtlabs = np.arange(R.shape[-2])
+
+        rRng =  np.max(np.abs(R.reshape((-1))))
+
+        for ci in range(R.shape[0]):
+            # make the axis
+            subploti=(nrows-1-ci)*ncols
+            if ci==0: # common axis plot
+                axR = plt.subplot(nrows, ncols, subploti+2) # share limits
+                axR.set_xlabel("time (s)")
+                axR.grid(True)
+                pR = axR
+            else: # normal plot
+                pR = plt.subplot(nrows, ncols, subploti+2, sharex=axR, sharey=axR) 
+                pR.grid(True)
+                pR.tick_params(axis='both',which='both',bottom=False, left=False, labelbottom=False,labelleft=False) # no labels
+
+            sign = 1 #np.sign(R[ci,...].flat[np.argmax(np.abs(R[ci,...]))]) # normalize directions
+            # make the temporal plot, with labels, N.B. use loop so can set each lines label
+            for e in range(R.shape[-2]):
+                Re = R[ci,e,:]*sign
+                if norm_temporal: Re = Re / np.sqrt(np.sum(Re*Re))
+                pR.plot(times,Re,'.-',label=evtlabs[e] if e<len(evtlabs) else e)
+            pR.set_ylim((-rRng,rRng))
+
+
+            #pR.title.set_text("Temporal {} #{}".format(temporal_filter_type,ci))
+
+        # legend in the temporal plot
+        axR.legend()
     # rotate the ticks to be readable?
     if ch_pos is None:
         # TODO[]: get and only set for the tick locations!
         #axA.set_xticklabels(ch_names,rotation=65)
         pass
-    if label:
-        plt.suptitle(label)
+    if suptitle:
+        plt.suptitle(suptitle)
+    if show is not None:
+        plt.show(block=show)
 
 
-def plot_subspace(X_TSfd, Y_TSye, W_kd, R_ket, S_y, f_f, offset:int=0, fs:float=100, block:bool=False, label:str=None):
+
+
+
+def plot_subspace(X_TSfd, Y_TSye, W_kd, R_ket, S_y, f_f, offset:int=0, fs:float=100, show:bool=False, label:str=None):
     """ plot the subspace source activity of a fwd-bwd model
 
     Args:
@@ -1194,7 +1804,7 @@ def plot_subspace(X_TSfd, Y_TSye, W_kd, R_ket, S_y, f_f, offset:int=0, fs:float=
         f_f ([type]): [description]
         offset (int, optional): [description]. Defaults to 0.
         fs (float, optional): [description]. Defaults to 100.
-        block (bool, optional): [description]. Defaults to False.
+        show (bool, optional): [description]. Defaults to False.
         label (str, optional): [description]. Defaults to None.
     """
     if W_kd.ndim==3:
@@ -1219,7 +1829,7 @@ def plot_subspace(X_TSfd, Y_TSye, W_kd, R_ket, S_y, f_f, offset:int=0, fs:float=
     elif offset>0:
         Yr_TSyk[:,R_ket.shape[-1]-1+offset:,:] = tmp[:,:-offset,:]
 
-    plot_trial(wXf_TSk, Yr_TSyk, fs=fs, block=block, ylabel="g(X) g(Y)", suptitle="sub_space {}".format(label))
+    plot_trial(wXf_TSk, Yr_TSyk, fs=fs, show=show, ylabel="g(X) g(Y)", suptitle="sub_space {}".format(label))
 
 
 def testSlicedvsContinuous():
@@ -1412,6 +2022,13 @@ def testCases():
 
     
 if __name__=="__main__":
+    import matplotlib.pyplot as plt
+
+    plot_erp(np.random.standard_normal(size=(1,1,20,4,8)),ch_names=['FPz','C3','Cz','C4','CP3','CPz','CP4','Pz'])
+    plt.show(block=True)
+
+    topoplots(np.random.standard_normal((5,8)),ch_names=['FPz','C3','Cz','C4','CP3','CPz','CP4','Pz'])
+
     test_compCyx_diag()
     testComputationMethods()
     testCases()

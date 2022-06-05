@@ -97,8 +97,6 @@ def run (host:str=None,board_id:int=1,ip_port:int=0,serial_port:str='',mac_addre
         samplingFrequency (float, optional): desired sampling rate to set the board to. Defaults to 0.
     """
     global board, client
-    # log the config
-    configmsg = "{}".format(dict(component=__file__, args=locals()))
 
     # init the board params
     params = BrainFlowInputParams ()
@@ -154,8 +152,17 @@ def run (host:str=None,board_id:int=1,ip_port:int=0,serial_port:str='',mac_addre
     client.autoconnect(host)
     # don't subscribe to anything
     client.sendMessage(utopiaclient.Subscribe(None, ""))
+
     # log the config
+    import json
+    configmsg = json.dumps(dict(component=__file__, args=dict(host=host,board_id=board_id,ip_port=ip_port,serial_port=serial_port,mac_address=mac_address,
+    other_info=other_info,
+         serial_number=serial_number,ip_address=ip_address,ip_protocol=ip_protocol,timeout=timeout,streamer_params=streamer_params,
+         log=log,
+         config_params=config_params, trigger_check=trigger_check, samplingFrequency=samplingFrequency)))
     client.sendMessage(utopiaclient.Log(None, configmsg))
+
+    # log the header info -- i.e. cap-layout?
     print("Putting header.")
     client.sendMessage(utopiaclient.DataHeader(None, len(eeg_channels), fSample, ""))
 
@@ -174,7 +181,7 @@ def run (host:str=None,board_id:int=1,ip_port:int=0,serial_port:str='',mac_addre
         data = board.get_board_data () # (channels,samples) get all data and remove it from internal buffer
         stamps=[]
         if board_id==0 or board_id==5:
-            stamps=[]
+
             for i in range(len(data[15])):
                 array=numpy.array([data[15][i],data[16][i],data[17][i],data[18][i]] , dtype=numpy.uint8)
                 stamps.append(unpack('>L',bytearray(array)))		
@@ -199,7 +206,7 @@ def run (host:str=None,board_id:int=1,ip_port:int=0,serial_port:str='',mac_addre
         # format for sending to MA
         eeg = eeg.T # MA uses (samples,channels)
 
-        # TODO[x]: send as smaller packets if too much data
+        # TODO[]: send as smaller packets if too much data
         if eeg.shape[0] < maxpacketsamples:
             # fit time-stamp into 32-bit int (with potential wrap-around)
             ts = timestamps[-1]
