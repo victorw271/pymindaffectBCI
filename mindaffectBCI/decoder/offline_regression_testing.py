@@ -14,7 +14,9 @@ random.seed(seed)
 np.random.seed(seed)
 import csv
 
-dir =  meta2csv()+ '/'
+#make directory for csv files
+if __name__ == "__main__":
+    dir =  meta2csv()+ '/'
 
 def setup_plos_one():
     dataset = "plos_one"
