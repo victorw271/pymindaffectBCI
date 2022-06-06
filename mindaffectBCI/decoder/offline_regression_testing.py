@@ -7,7 +7,7 @@ seed=0
 from mindaffectBCI.decoder.analyse_datasets import decoding_curve_GridSearchCV, datasets_decoding_curve_GridSearchCV, average_results_per_config, plot_decoding_curves
 from mindaffectBCI.decoder.preprocess_transforms import make_preprocess_pipeline
 from mindaffectBCI.decoder.offline.datasets import get_dataset
-from mindaffectBCI.decoder.decodingCurveSupervised import print_decoding_curve, score_decoding_curve
+from mindaffectBCI.decoder.decodingCurveSupervised import print_decoding_curve, score_decoding_curve, flatten_decoding_curves
 import random
 random.seed(seed)
 np.random.seed(seed)
@@ -181,7 +181,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # SAVE TABLE PER DATASET FILE
     ## ---------------------------
     ## ---------------------------
-    s = print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))
+    
 
     for file in filenames:
         # Parse filename such that it becomes e.g. '\LL_eng_02_20170818_tr_train_1_mat.csv'
@@ -203,14 +203,13 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
             fn = fn.replace('.', '_')+'.csv'
 
         # Try writing the csv file with the name of the file that is analysed
+        data_int = np.array([flatten_decoding_curves(res['decoding_curve'],labels=res['filename'])])
         try:
-            data_int = np.array([s]*len(filenames))
             with open('csv/'+fn, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow([fn])
-                for row in s:
-                    writer.writerows(row)
-                
+                #writer.writerow(["int_len", "prob_err", "prob_err_est", "se", "st"])
+                #writer.writerow(data_int)
         except:
             print("Error writing "+file)
 
