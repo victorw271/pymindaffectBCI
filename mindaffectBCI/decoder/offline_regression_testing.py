@@ -214,7 +214,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
 
         # Try writing the csv file with the name of the file that is analysed
         try:
-            data_int = np.array([s])
+            data_int = np.array([s]*len(filenames))
             with open('csv/'+fn, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow(['thing'])
