@@ -204,7 +204,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
 
         # Try writing the csv file with the name of the file that is analysed
         try:
-            #data_int = np.array([s])
+            data_int = np.array([s]*len(filenames))
             with open('csv/'+fn, 'w', newline='') as f:
                 writer = csv.writer(f)
                 writer.writerow([fn])
@@ -245,10 +245,10 @@ def analyse_datasets_test(dataset:str, dataset_args:dict, loader_args:dict, pipe
 
 def regression_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv):
     ''' run cross datasets test, with fallback for older non-supported code paths. '''
-    # try:
-    res = pipeline_test(dataset,dataset_args,loader_args,pipeline,cv)
-    # except:
-    #     res = None
+    try:
+        res = pipeline_test(dataset,dataset_args,loader_args,pipeline,cv)
+    except:
+        res = None
     return res
 
 
