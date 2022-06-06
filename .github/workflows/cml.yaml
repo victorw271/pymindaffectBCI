@@ -1,5 +1,6 @@
 name: MLOps-offline_regression_testing
 on:
+  push:
   issues:
     types: [created]
 jobs:
