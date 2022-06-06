@@ -15,13 +15,13 @@ def app():
 
     # #x = np.arange(500)
 
-    dfs, column_names = pp()
+    dfs, column_names, columns_names2, columns_names2, path_list, time, mds = pp()
 
     #[72,145,199,272,345,399,472,545]
     #[1.10,0.80,0.68,0.60,0.50,0.40,0.40,0.45]
     source = pd.DataFrame({
-        'Integration Length (samples)': dfs[0]['AUDC'] ,
-        'Perr': [1,2,3,4,5,6]
+        'Integration Length (samples)': dfs[4]['int_len'] ,
+        'Perr': dfs[4]['prob_err']
     })
 
     c= alt.Chart(source).mark_line().encode(
@@ -32,26 +32,7 @@ def app():
     st.subheader("Analysis noisetag_bci_201029_1340_ganglion dataset")
     st.altair_chart(c, use_container_width=True)
 
-    col1, col2 = st.columns([2,1])
-
-    source = pd.DataFrame({
-        'Metric': ['AUDC', 'PSAE', 'AUSC', 'SSAE'],
-        'Value': [63, 34, 63, 31]
-    })
-
-    c= alt.Chart(source).mark_bar().encode(
-        x='Metric',
-        y='Value'
-    )
-    col1.altair_chart(c, use_container_width=True)
-
-
-    col2.write(pd.DataFrame({
-        'Metric': ['AUDC', 'PSAE', 'AUSC', 'SSAE'],
-        'Value': [63.2, 34.1, 63.8, 31.7]
-    }))
-
     st.write(pd.DataFrame({
-        'StopErr': [1.00,  0.75,  0.68,  0.45,  0.47,  0.53,  0.45,  0.45],
-        'StopThresh(P)': [0.95,  0.85,  0.82,  0.76,  0.73,  0.71,  0.65,  0.64 ]
+        'StopErr': dfs[4]['se'],
+        'StopThresh(P)': dfs[4]['st']
     }))

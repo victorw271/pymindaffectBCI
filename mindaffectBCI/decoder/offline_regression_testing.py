@@ -2,17 +2,21 @@
 from joblib import PrintTime
 import numpy as np
 import matplotlib.pyplot as plt
+from metadata import meta2csv
 # force random seed for reproducibility
 seed=0
 from mindaffectBCI.decoder.analyse_datasets import decoding_curve_GridSearchCV, datasets_decoding_curve_GridSearchCV, average_results_per_config, plot_decoding_curves
 from mindaffectBCI.decoder.preprocess_transforms import make_preprocess_pipeline
 from mindaffectBCI.decoder.offline.datasets import get_dataset
-from mindaffectBCI.decoder.decodingCurveSupervised import print_decoding_curve, score_decoding_curve
+from mindaffectBCI.decoder.decodingCurveSupervised import print_decoding_curve, score_decoding_curve, flatten_decoding_curves
 import random
 random.seed(seed)
 np.random.seed(seed)
-
 import csv
+
+#make directory for csv files
+if __name__ == "__main__":
+    dir =  meta2csv()+ '/'
 
 def setup_plos_one():
     dataset = "plos_one"
@@ -156,19 +160,10 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # SAVE SUMMARY PER DATA REPO (kaggle, lowlands, etc.)
     ## ---------------------------
     ## ---------------------------
+    
     # Save to a CSV file
     # Find where the data came from
-    name_file = 'no_data_found.csv'
-    baseline_audc = 'not found'
-    if ('mindaffectBCI' in filenames[0]):
-        name_file = 'kaggle.csv'
-        baseline_audc = '48.5'
-    elif ('LL' in filenames[0]):
-        name_file = 'lowlands.csv'
-        baseline_audc = '35.2'
-    elif ('data.mat' in filenames[0]):
-        name_file = 'plos_one.csv'
-        baseline_audc = '51.9'
+    name_file = dataset+'.csv'
 
     # Clean up string
     string_clsfr = str(clsfr).replace('\n', '')
@@ -178,7 +173,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # Get data into csv file.
     ave_dc = score_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))['audc']
     data_int = np.transpose(np.array([filenames, [string_clsfr]*len(filenames), [str("%.3f" % x) for x in res['audc']], [str("%.3f" % ave_dc)]*len(filenames), [51.9]*len(filenames)]))
-    with open('csv/'+name_file, 'w', newline='') as f:
+    with open('csv/'+dir+ name_file, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['file', 'clsfr', 'AUDC', 'ave-AUDC', 'baseline-AUDC'])
         writer.writerows(data_int)
@@ -191,9 +186,9 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # SAVE TABLE PER DATASET FILE
     ## ---------------------------
     ## ---------------------------
-    s = print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))
     
-    for file in filenames:
+
+    for i,file in enumerate(filenames):
         # Parse filename such that it becomes e.g. '\LL_eng_02_20170818_tr_train_1_mat.csv'
         fn = 'file'
         ll = file.split('lowlands')
@@ -211,13 +206,14 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
             fn = p1[1]
             fn = fn.replace('\\', '_')
             fn = fn.replace('.', '_')+'.csv'
+        fn = dir + fn
 
         # Try writing the csv file with the name of the file that is analysed
+        data_int = np.transpose(((np.array([flatten_decoding_curves(res['decoding_curve'])])[:,:,i]).flatten()).reshape(5,30))
         try:
-            data_int = np.array([s])
             with open('csv/'+fn, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(['thing'])
+                writer.writerow(["int_len", "prob_err", "prob_err_est", "se", "st"])
                 writer.writerows(data_int)
         except:
             print("Error writing "+file)
@@ -253,10 +249,10 @@ def analyse_datasets_test(dataset:str, dataset_args:dict, loader_args:dict, pipe
 
 def regression_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv):
     ''' run cross datasets test, with fallback for older non-supported code paths. '''
-    # try:
-    res = pipeline_test(dataset,dataset_args,loader_args,pipeline,cv)
-    # except:
-    #     res = None
+    try:
+        res = pipeline_test(dataset,dataset_args,loader_args,pipeline,cv)
+    except:
+        res = None
     return res
 
 

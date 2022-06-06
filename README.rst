@@ -7,7 +7,7 @@ Online Documentation and Tutorials
 Available at: `https://mindaffect-bci.readthedocs.io/ <https://mindaffect-bci.readthedocs.io/en/latest/tutorials.html>`_
 
 Installation
------------------
+------------
 
 To install from **source** (currently the recommended method):
   1. Clone or download this repository::
