@@ -183,7 +183,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     ## ---------------------------
     
 
-    for file in filenames:
+    for i,file in enumerate(filenames):
         # Parse filename such that it becomes e.g. '\LL_eng_02_20170818_tr_train_1_mat.csv'
         fn = 'file'
         ll = file.split('lowlands')
@@ -203,13 +203,12 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
             fn = fn.replace('.', '_')+'.csv'
 
         # Try writing the csv file with the name of the file that is analysed
-        data_int = np.array([flatten_decoding_curves(res['decoding_curve'],labels=res['filename'])])
+        data_int = np.transpose(((np.array([flatten_decoding_curves(res['decoding_curve'])])[:,:,i]).flatten()).reshape(5,30))
         try:
             with open('csv/'+fn, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow([fn])
-                #writer.writerow(["int_len", "prob_err", "prob_err_est", "se", "st"])
-                #writer.writerow(data_int)
+                writer.writerow(["int_len", "prob_err", "prob_err_est", "se", "st"])
+                writer.writerows(data_int)
         except:
             print("Error writing "+file)
 
@@ -244,10 +243,10 @@ def analyse_datasets_test(dataset:str, dataset_args:dict, loader_args:dict, pipe
 
 def regression_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv):
     ''' run cross datasets test, with fallback for older non-supported code paths. '''
-    try:
-        res = pipeline_test(dataset,dataset_args,loader_args,pipeline,cv)
-    except:
-        res = None
+    #try:
+    res = pipeline_test(dataset,dataset_args,loader_args,pipeline,cv)
+    #except:
+        #res = None
     return res
 
 
