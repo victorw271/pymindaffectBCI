@@ -6,3 +6,4 @@ scikit-learn>=0.22.2.post1
 scipy>=1.0.1
 pandas
 gitpython
+git
