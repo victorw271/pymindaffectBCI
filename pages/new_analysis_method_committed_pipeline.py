@@ -20,26 +20,32 @@ def app():
 
     dfs, column_names, columns_names2, columns_names2, path_list, time, mds = pp()
 
-    k_audc = dfs[0]['AUDC']
-    l_audc = dfs[1]['AUDC']
-    p_audc = dfs[3]['AUDC']
+    avg_k_audc = []
+    avg_l_audc = []
+    avg_p_audc = []
 
-    new_k_audc = np.array(k_audc).transpose()
-    new_l_audc = np.array(l_audc).transpose()
-    new_p_audc = np.array(p_audc).transpose()
+    for i in range(0, len(dfs), 18):
+        avg_k_audc.append( dfs[i]['ave-AUDC'] )
+        avg_l_audc.append (  dfs[i+1]['ave-AUDC'] )
+        avg_p_audc.append( dfs[i+3]['ave-AUDC'] )
 
-    source = pd.DataFrame(new_k_audc,
-                          columns=['Kaggle'])
+    new_k_audc = np.array(avg_k_audc)
+    new_l_audc = np.array(avg_l_audc)
+    new_p_audc = np.array(avg_p_audc)
 
-    source2 = pd.DataFrame(new_l_audc,
-                          columns=['Lowlands'])
-    
-    source3 = pd.DataFrame(new_p_audc,
-                          columns=['Plosone'])
+    input = np.array([new_k_audc[:,0], new_l_audc[:,0], new_p_audc[:,0]])
 
-    st.line_chart(source)
-    st.line_chart(source2)
-    st.line_chart(source3)
+    source = pd.DataFrame(np.transpose(input),
+                          columns=['Kaggle', 'Lowlands', 'Plos_one'], index=pd.RangeIndex(1, len(avg_k_audc)+1, name='Commit-ID'))
+    source = source.reset_index().melt('Commit-ID', var_name='dataset', value_name='avg-AUDC')
+    line = alt.Chart(source).mark_line(interpolate='basis').encode(
+        x='Commit-ID:Q',
+        y='avg-AUDC:Q',
+        color='dataset:N'
+    ).properties(
+    title='Average AUDC across commits'
+)
+    st.altair_chart(line, use_container_width=True)
 
     #source = source.reset_index().melt('Commit-ID', var_name='dataset', value_name='avg-AUDC')
     #line = alt.Chart(source).mark_line(interpolate='basis').encode(
@@ -69,24 +75,13 @@ def app():
     #     'Dataset name': ['mindaffectBCI_noisetag_bci_201029_1340_ganglion.txt','Perr_plos_one_supervised_...','LL_eng_02_20170818_tr_train_1.mat']
     # }))
 
-    unique_branches = np.unique(np.array(branch))
+    #unique_branches = np.unique(np.array(branch))
 
-    count_branch = []
+    #count_branch = []
 
     #for br in unique_branches:
         #count_branch.append(branch.count(br))
-        
-    source = pd.DataFrame({
-        'Branch': unique_branches,
-        '#commits': 2 
-    })
-
-    c= alt.Chart(source).mark_bar().encode(
-        x='Branch',
-        y='#commits'
-    )
-    col2.altair_chart(c, use_container_width=True)
-
+    
     # col1, col2 = st.columns(2)
     # chart_data = pd.DataFrame(
     #     np.array([[1, 2, 3], [4, 5, 6],[4, 5, 6]]),

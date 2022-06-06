@@ -39,7 +39,7 @@ p_audc = []
 
 s = dfs[0]['AUDC']
 g = dfs[1]['AUDC']
-f = dfs[3]['AUDC']
+f = dfs[18]['AUDC']
 
 sha = []
 cm_id = []
@@ -50,7 +50,42 @@ for count, md in enumerate(mds):
     branch.append(md['branch'])
     cm_id.append(count)
 
-print(mds[0]['branch'])
+#for i in range(0, len(dfs), 18):
+    #print(i)
+    #print(dfs[i]['AUDC'])
+
+j = 18
+
+avg_k_audc = []
+avg_l_audc = []
+avg_p_audc = []
+
+for i in range(0, len(dfs), 18):
+    avg_k_audc.append(dfs[i]['ave-AUDC'])
+    avg_l_audc.append(dfs[i+1]['ave-AUDC'])
+    avg_p_audc.append(dfs[i+3]['ave-AUDC'])
+
+new_k_audc = np.array(avg_k_audc)
+new_l_audc = np.array(avg_l_audc)
+new_p_audc = np.array(avg_p_audc)
+
+input = np.array([new_k_audc[:,0], new_l_audc[:,0], new_p_audc[:,0]])
+
+print(input)
+print(dfs[3]['ave-AUDC'])
+#print(np.transpose(input))
+#print(new_k_audc)
+#print(np.transpose(input))
+
+#print(len(dfs))
+#print(dfs[0]['AUDC'])
+#print(dfs[1]['AUDC'])
+#print(dfs[3]['AUDC'])
+#print(dfs[j]['AUDC'])
+#print(dfs[19])
+#print(dfs[21])
+
+#print(mds[0]['branch'])
 #print(sha)
 #print(cm_id)
 #print(branch)
