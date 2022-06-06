@@ -2,6 +2,7 @@
 from joblib import PrintTime
 import numpy as np
 import matplotlib.pyplot as plt
+from metadata import meta2csv
 # force random seed for reproducibility
 seed=0
 from mindaffectBCI.decoder.analyse_datasets import decoding_curve_GridSearchCV, datasets_decoding_curve_GridSearchCV, average_results_per_config, plot_decoding_curves
@@ -11,8 +12,9 @@ from mindaffectBCI.decoder.decodingCurveSupervised import print_decoding_curve, 
 import random
 random.seed(seed)
 np.random.seed(seed)
-
 import csv
+
+dir =  meta2csv()+ '/'
 
 def setup_plos_one():
     dataset = "plos_one"
@@ -156,6 +158,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # SAVE SUMMARY PER DATA REPO (kaggle, lowlands, etc.)
     ## ---------------------------
     ## ---------------------------
+    
     # Save to a CSV file
     # Find where the data came from
     name_file = dataset+'.csv'
@@ -168,7 +171,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # Get data into csv file.
     ave_dc = score_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))['audc']
     data_int = np.transpose(np.array([filenames, [string_clsfr]*len(filenames), [str("%.3f" % x) for x in res['audc']], [str("%.3f" % ave_dc)]*len(filenames), [51.9]*len(filenames)]))
-    with open('csv/'+ name_file, 'w', newline='') as f:
+    with open('csv/'+dir+ name_file, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['file', 'clsfr', 'AUDC', 'ave-AUDC', 'baseline-AUDC'])
         writer.writerows(data_int)
@@ -201,6 +204,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
             fn = p1[1]
             fn = fn.replace('\\', '_')
             fn = fn.replace('.', '_')+'.csv'
+        fn = dir + fn
 
         # Try writing the csv file with the name of the file that is analysed
         data_int = np.transpose(((np.array([flatten_decoding_curves(res['decoding_curve'])])[:,:,i]).flatten()).reshape(5,30))
