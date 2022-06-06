@@ -158,17 +158,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     ## ---------------------------
     # Save to a CSV file
     # Find where the data came from
-    name_file = 'no_data_found.csv'
-    baseline_audc = 'not found'
-    if ('mindaffectBCI' in filenames[0]):
-        name_file = 'kaggle.csv'
-        baseline_audc = '48.5'
-    elif ('LL' in filenames[0]):
-        name_file = 'lowlands.csv'
-        baseline_audc = '35.2'
-    elif ('data.mat' in filenames[0]):
-        name_file = 'plos_one.csv'
-        baseline_audc = '51.9'
+    name_file = dataset+'.csv'
 
     # Clean up string
     string_clsfr = str(clsfr).replace('\n', '')
@@ -178,7 +168,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     # Get data into csv file.
     ave_dc = score_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))['audc']
     data_int = np.transpose(np.array([filenames, [string_clsfr]*len(filenames), [str("%.3f" % x) for x in res['audc']], [str("%.3f" % ave_dc)]*len(filenames), [51.9]*len(filenames)]))
-    with open('csv/'+name_file, 'w', newline='') as f:
+    with open('csv/'+ name_file, 'w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(['file', 'clsfr', 'AUDC', 'ave-AUDC', 'baseline-AUDC'])
         writer.writerows(data_int)
@@ -192,7 +182,7 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
     ## ---------------------------
     ## ---------------------------
     s = print_decoding_curve(*(average_results_per_config(res)['decoding_curve'][0]))
-    
+
     for file in filenames:
         # Parse filename such that it becomes e.g. '\LL_eng_02_20170818_tr_train_1_mat.csv'
         fn = 'file'
@@ -214,11 +204,13 @@ def pipeline_test(dataset:str, dataset_args:dict, loader_args:dict, pipeline, cv
 
         # Try writing the csv file with the name of the file that is analysed
         try:
-            data_int = np.array([s])
+            #data_int = np.array([s])
             with open('csv/'+fn, 'w', newline='') as f:
                 writer = csv.writer(f)
-                writer.writerow(['thing'])
-                writer.writerows(data_int)
+                writer.writerow([fn])
+                for row in s:
+                    writer.writerows(row)
+                
         except:
             print("Error writing "+file)
 
