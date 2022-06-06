@@ -42,6 +42,7 @@ dataroots = ['~/data',
             '/home/shared/drive/',
             'D://',
             'C:\\Users\\freek\\Desktop\\data',
+            'C:\\Users\\freek\\OneDrive\\Desktop\\data',
             '.',
             ]
 
